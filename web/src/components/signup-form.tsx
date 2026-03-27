@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useNavigate } from "react-router-dom"
+import { fetchRoot } from "@/api"
 
 export function SignupForm({
   className,
@@ -64,7 +65,7 @@ export function SignupForm({
                   <Input id="confirm-password" type="password" required />
                 </Field>
               <Field>
-                <Button type="submit" onClick={() => navigate}>Create Account</Button>
+                <Button type="submit" onClick={() => fetchRoot()}>Create Account</Button>
                 <FieldDescription className="text-center">
                   Already have an account? <a href="#">Sign in</a>
                 </FieldDescription>
