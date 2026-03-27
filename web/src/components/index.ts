@@ -1,5 +1,3 @@
-export { default as Login } from './Login/Login'
 export { default as InputField } from './InputField/InputField'
 export { default as PrimaryButton } from './PrimaryButton/PrimaryButton'
 export { default as CheckSelection } from './CheckSelection/CheckSelection'
-export { default as SignUp } from './SignUp/SignUp'

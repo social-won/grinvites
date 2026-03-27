@@ -1,13 +1,14 @@
 import { FC } from 'react'
-import Login from './components/Login/Login.tsx'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
-import { SignUp } from './components/index.ts'
+import { SignupForm } from './components/signup-form.tsx'
 
 const App: FC = () => {
   return (
-    <div>
-      <SignUp />
-    </div>
+    <Routes>
+      <Route path="/signup" element={<SignupForm />} />
+      <Route path="/" element={<Navigate to="/signup" replace />} />
+    </Routes>
   )
 }
 
