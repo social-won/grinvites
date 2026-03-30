@@ -1,5 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import sqlite3
+import user
+from pydantic import BaseModel
+
 
 # Written following https://fastapi.tiangolo.com/tutorial/
 app = FastAPI()
@@ -23,7 +27,8 @@ app.add_middleware(
 # Create new user
 @app.post("/user")
 async def create_user():
-    pass
+    user = user.User()
+    return user
 
 # I have no idea if this is how we want to do auth but claude gave it to me this way
 # def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -38,21 +43,43 @@ async def create_user():
 # Get user object
 @app.get("/user/{user_id}")
 async def read_user(user_id):
-    pass
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 # Update user object
 @app.put("/user/{user_id}")
 async def set_user(user_id):
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (id) VALUES (?)", (user_id,))
+    conn.close()
     pass
 
 # Get user interests
 @app.get("/user/{user_id}/interests")
 async def read_user_interests(user_id):
-    pass
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT interests FROM users WHERE id = ?", (user_id,))
+    interests = cursor.fetchone()
+    conn.close()
+    if not interests:
+        raise HTTPException(status_code=404, detail="User not found")
+    return interests
 
 # Update user interests
 @app.put("/user/{user_id}/interests")
 async def set_user_interests(user_id):
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO interests (id) VALUES (?)", (user_id,))
+    conn.close()
     pass
 
 
@@ -60,7 +87,14 @@ async def set_user_interests(user_id):
 # Get event
 @app.get("/events/{event_id}")
 async def read_event(event_id):
-    pass
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
+    event = cursor.fetchone()
+    conn.close()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
 
 # Get events <--- this one I imagine is going to be pretty complex query params
 @app.get("/events")
