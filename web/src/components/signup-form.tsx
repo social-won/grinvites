@@ -22,7 +22,15 @@ export function SignupForm({
   ...props
 }: React.ComponentProps<"div">) {
 
-  let navigate = useNavigate()
+  const navigate = useNavigate()
+
+  const handleSignUp = () => {
+    navigate("/onboarding")
+  }
+
+  const handleSignIn = () => {
+    navigate("/login")
+  }
 
   return (
     <div className={cn("flex flex-col gap-6 p-4", className)} {...props}>
@@ -39,7 +47,7 @@ export function SignupForm({
               <Field className="grid grid-cols-2 gap-4">
                 <Field>
                   <FieldLabel htmlFor="name">Name</FieldLabel>
-                  <Input id="name" type="text" placeholder="John" required />
+                  <Input id="name" type="text" placeholder="John" />
                 </Field>
                   <Field>
                   <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -47,13 +55,12 @@ export function SignupForm({
                     id="email"
                     type="email"
                     placeholder="john@example.com"
-                    required
                   />
                 </Field>
               </Field>
                 <Field>
                   <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <Input id="password" type="password" required />
+                  <Input id="password" type="password" />
                   <FieldDescription>
                     Must be at least 8 characters long.
                   </FieldDescription>
@@ -62,12 +69,12 @@ export function SignupForm({
                   <FieldLabel htmlFor="confirm-password">
                     Confirm Password
                   </FieldLabel>
-                  <Input id="confirm-password" type="password" required />
+                  <Input id="confirm-password" type="password" />
                 </Field>
               <Field>
-                <Button type="submit" onClick={() => fetchRoot()}>Create Account</Button>
+                <Button onClick={handleSignUp}>Create Account</Button>
                 <FieldDescription className="text-center">
-                  Already have an account? <a href="#">Sign in</a>
+                  Already have an account? <a href="#" onClick={handleSignIn} className="text-primary hover:underline">Sign in</a>
                 </FieldDescription>
               </Field>
             </FieldGroup>
