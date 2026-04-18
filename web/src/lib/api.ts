@@ -1,4 +1,5 @@
-// import React, { useState, useEffect } from 'react';
+import { User } from "@supabase/supabase-js";
+import supabase from "./supabase";
 
 const API_ENDPOINT = "http://127.0.0.1:8000"
 
@@ -12,9 +13,9 @@ export const fetchRoot = async () => {
     }
 };
 
-export const fetchMe = async () => {
+export const getUser = async (uid: string) => {    
     try {
-        const response = await fetch(`${API_ENDPOINT}/user/1`, {
+        const response = await fetch(`${API_ENDPOINT}/user/${uid}`, {
             credentials: "include",
             method: "GET",
             headers: {
@@ -35,6 +36,10 @@ export const fetchMe = async () => {
         throw error;
     }
 };
+
+export const createUser = async (user : User) => {
+    return;
+}
 
 
 export const classesData = [

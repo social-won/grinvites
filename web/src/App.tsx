@@ -1,6 +1,5 @@
 import { FC } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import './App.css'
 import { SignupForm } from './components/signup-form.tsx'
 import { LoginForm } from './components/login-form.tsx'
 import OnboardingFlow from './components/onboarding-flow.tsx'
