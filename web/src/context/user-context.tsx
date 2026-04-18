@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { fetchMe } from "@/api";
+import { getUser } from "@/lib/api";
 
 export interface User {
   id: string;
@@ -27,7 +27,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchMe();
+      const data = await getUser("");
       setUser(data);
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Unknown error");

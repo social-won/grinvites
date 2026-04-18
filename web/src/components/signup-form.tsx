@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useNavigate } from "react-router-dom"
-import { fetchRoot } from "@/api"
 
 export function SignupForm({
   className,
