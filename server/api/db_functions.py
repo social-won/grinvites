@@ -63,11 +63,19 @@ def get_user_interests(email):
         SELECT interest_id FROM user_interests WHERE user_id = ?
     ''', (user_id,))
     interest_ids = cursor.fetchall()
-    user_interests = []
-    for interest_id in interest_ids:
-        user_interests.append(interest_id)
+    user_interests = [row[0] for row in interest_ids]
     connection.close()
     return user_interests
+
+def add_event(title, org_name, description, start_time, end_time, location, frequency):
+    connection = sqlite3.connect('test_grinvites.db')
+    cursor = connection.cursor()
+    cursor.execute('''
+        INSERT INTO events (title, org_name, description, start_time, end_time, location, frequency)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (title, org_name, description, start_time, end_time, location, frequency))
+    connection.commit()
+    connection.close()
 
 def get_events():
     connection = sqlite3.connect('test_grinvites.db')
@@ -117,9 +125,7 @@ def get_event_interests(event_title):
         SELECT interest_id FROM event_interests WHERE event_id = ?
     ''', (event_id,))
     interest_ids = cursor.fetchall()
-    event_interests = []
-    for interest_id in interest_ids:
-        event_interests.append(interest_id)
+    event_interests = [row[0] for row in interest_ids]
     connection.close()
     return event_interests
 
@@ -158,9 +164,7 @@ def get_event_id_by_time(start_time):
         SELECT id FROM events WHERE start_time = ?
     ''', (start_time,))
     event_id = cursor.fetchall()
-    event_ids = []
-    for event in event_id:
-        event_ids.append(event)
+    event_ids = [row[0] for row in event_id]
     connection.close()
     return event_ids
 
@@ -172,9 +176,7 @@ def get_users_for_event(event_id):
         SELECT user_id FROM event_users WHERE event_id = ?
     ''', (event_id,))
     user_ids = cursor.fetchall()
-    users = []
-    for user_id in user_ids:
-        users.append(user_id)
+    users = [row[0] for row in user_ids]
     connection.close()
     return users
 
