@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { FaMicrosoft, FaGoogle, FaApple } from "react-icons/fa";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { useUser } from "@/context/user-context";
-import { classesData, hoursData } from "@/api";
+import { classesData, hoursData } from "@/lib/api";
 
 const steps = [
   {

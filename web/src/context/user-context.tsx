@@ -1,33 +1,47 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { fetchMe } from "@/api";
-
-export interface User {
-  id: string;
-  email: string;
-  display_name?: string;
-  calendar_type?: string;
-  prefer_notify: 0;
-}
+import { getUser } from "@/lib/api";
+import supabase from "@/lib/supabase";
+import { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { GrinvitesUser } from "@/lib/utils";
 
 interface UserContextType {
-  user: User | null;
+  user: GrinvitesUser | null;
   loading: boolean;
   error: Error | null;
-  refetch: () => Promise<void>;
+  // refetch: () => Promise<void>;
+  setUser: React.Dispatch<React.SetStateAction<GrinvitesUser | null>>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<GrinvitesUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchUser = async () => {
+  const handleAuthChange = async (_e: AuthChangeEvent, session: Session | null) => {
+    console.log(session);
+    
+    if (!session?.user) {
+      setUser(null);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchMe();
+
+      const data = await getUser(session.user.id).catch(console.log);
+
+      if (!data) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || "",
+          prefer_notify: 0
+        });
+        return;
+      }
+
       setUser(data);
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Unknown error");
@@ -39,11 +53,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    fetchUser();
+    const { data: listener } = supabase.auth.onAuthStateChange(handleAuthChange);
+
+    return () => {
+      listener?.subscription?.unsubscribe();
+    };
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, loading, error, refetch: fetchUser }}>
+    <UserContext.Provider value={{ user, loading, error, setUser }}>
       {children}
     </UserContext.Provider>
   );
