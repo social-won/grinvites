@@ -36,6 +36,16 @@ def get_user_by_email(email):
     connection.close()
     return user
 
+def get_event_by_id(event_id): 
+    connection = sqlite3.connect('test_grinvites.db')
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT * FROM events WHERE id = ?
+    ''', (event_id,))
+    event = cursor.fetchone()
+    connection.close()
+    return event
+
 #Updates a user's interests or adds them if non exist.
 def update_user_interests(email, interest_ids):
     connection = sqlite3.connect('test_grinvites.db')
