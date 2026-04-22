@@ -4,7 +4,9 @@ import { useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Check
+  Check,
+  Mail,
+  SquareArrowOutUpRight
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,52 +20,95 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useUser } from "@/context/user-context";
 import { classesData, hoursData } from "@/lib/api";
 
+const DAYS_OF_WEEK = [
+  { day: "Monday", short: "Mon", letter: "M" },
+  { day: "Tuesday", short: "Tue", letter: "T" },
+  { day: "Wednesday", short: "Wed", letter: "W" },
+  { day: "Thursday", short: "Thu", letter: "Th" },
+  { day: "Friday", short: "Fri", letter: "F" },
+  { day: "Saturday", short: "Sat", letter: "S" },
+  { day: "Sunday", short: "Sun", letter: "Su" },
+];
+
 const steps = [
+  // {
+  //   id: 0,
+  //   title: "Calendar Integration",
+  //   description: "Connect your calendar"
+  // },
   {
-    id: 1,
-    title: "Calendar Integration",
-    description: "Connect your calendar"
-  },
-  {
-    id: 2,
+    id: 0,
     title: "Class Schedule",
     description: "Select your classes"
   },
   {
-    id: 3,
+    id: 1,
     title: "Hours of Operation",
     description: "Select hours to watch"
+  },
+  {
+    id: 2,
+    title: "Invite Schedule",
+    description: "Configure when to send invites"
+  },
+  {
+    id: 3,
+    title: "Email Setup",
+    description: "Add Grinvites as a known sender"
+  },
+  {
+    id: 4,
+    title: "First Invite",
+    description: "Check your calendar"
   }
 ];
 
+function parse(value: string): { hour12: number; minute: number; isPM: boolean } {
+  const [h, m] = value.split(":").map(Number);
+  return {
+    hour12: h % 12 === 0 ? 12 : h % 12,
+    minute: m,
+    isPM: h >= 12,
+  };
+}
+
+function formatTime(value: string): string {
+  const { hour12, minute, isPM } = parse(value);
+  return `${hour12}:${String(minute).padStart(2, "0")} ${isPM ? "PM" : "AM"}`;
+}
+
 export default function OnboardingFlow() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
-    calendarProvider: "", // google, apple, microsoft
+    // calendarProvider: "", // google, apple, microsoft
     selectedClasses: [] as string[],
     selectedHours: [] as string[],
     classSearch: "",
-    hoursSearch: ""
+    hoursSearch: "",
+    inviteDays: [] as string[],
+    inviteTimes: {} as Record<string, string>
   });
 
-  const [connected, setConnected ] = useState(false);
+  const [emailOpened, setEmailOpened] = useState(false);
 
   const { user } = useUser();
 
-  // Mock data - in real app, this would come from API calls
+  const isNextDisabled = () => {
+    if (currentStep === 2) return formData.inviteDays.length === 0;
+    if (currentStep === 3) return !emailOpened;
+    return false;
+  };
 
   const handleNext = () => {
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     } else {
-      console.log(formData);
-      
       navigate("/home");
     }
   };
 
   const handlePrevious = () => {
-    if (currentStep > 1) {
+    if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -85,52 +130,12 @@ export default function OnboardingFlow() {
   const navigate = useNavigate();
 
   const renderStepContent = () => {
+    const filteredHours = hoursData.filter((hour) =>
+      hour.name.toLowerCase().includes(formData.hoursSearch.toLowerCase())
+    );
+
     switch (currentStep) {
-      case 1:
-        return (
-          <div className="space-y-6 w-full">
-            <CardHeader className="px-0 pt-0">
-              <CardTitle>What calendar do you want to connect?</CardTitle>
-              <CardDescription>
-                Select your calendar provider to sync your schedule
-              </CardDescription>
-            </CardHeader>
-
-            <div className="flex items-center gap-3 flex-col">
-              <Button variant="secondary" type="button" className="w-full max-w-sm">
-                <FaApple />
-                Login with Apple
-              </Button>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="secondary" type="button" className="w-full max-w-sm" onClick={() => setConnected(true)}>
-                    <FaGoogle />
-                    Login with Google
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Connection Successful</DialogTitle>
-                    <DialogDescription>
-                      Connected to {user?.email}
-                    </DialogDescription> 
-                    <Button onClick={handleNext}>
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </DialogHeader>
-                </DialogContent>
-              </Dialog>
-
-              <Button variant="secondary" type="button" className="w-full max-w-sm">
-                <FaMicrosoft />
-                Login with Microsoft
-              </Button>
-            </div>
-          </div>
-        );
-
-      case 2:
+      case 0:
         const filteredClasses = classesData.filter((cls) =>
           cls.name.toLowerCase().includes(formData.classSearch.toLowerCase())
         );
@@ -159,8 +164,8 @@ export default function OnboardingFlow() {
                     className="flex items-center gap-3 p-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
                     onClick={() => toggleSelection(cls.id, "selectedClasses")}>
                     <Checkbox
-                      checked={formData.selectedClasses.includes(cls.id)}
-                      onCheckedChange={() => toggleSelection(cls.id, "selectedClasses")}
+                    // checked={formData.selectedClasses.includes(cls.id)}
+                    // onCheckedChange={() => toggleSelection(cls.id, "selectedClasses")}
                     />
                     <label className="cursor-pointer flex-1">{cls.name}</label>
                   </div>
@@ -179,10 +184,8 @@ export default function OnboardingFlow() {
           </div>
         );
 
-      case 3:
-        const filteredHours = hoursData.filter((hour) =>
-          hour.name.toLowerCase().includes(formData.hoursSearch.toLowerCase())
-        );
+      case 1:
+
 
         return (
           <div className="space-y-6 w-full">
@@ -228,65 +231,250 @@ export default function OnboardingFlow() {
           </div>
         );
 
+      case 2:
+        return (
+          <div className="space-y-6 w-full">
+            <CardHeader className="px-0 pt-0">
+              <CardTitle>When should we send your invites?</CardTitle>
+              <CardDescription>
+                Pick the days and times each week to receive your event invitations
+              </CardDescription>
+            </CardHeader>
+
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium">Days of the week</label>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {DAYS_OF_WEEK.map(({ short, letter }) => {
+                    const selected = formData.inviteDays.includes(short);
+                    return (
+                      <button
+                        key={short}
+                        type="button"
+                        onClick={() => {
+                          if (selected) {
+                            const updatedDays = formData.inviteDays.filter((d) => d !== short);
+                            const updatedTimes = { ...formData.inviteTimes };
+                            delete updatedTimes[short];
+                            setFormData((prev) => ({ ...prev, inviteDays: updatedDays, inviteTimes: updatedTimes }));
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              inviteDays: [...prev.inviteDays, short],
+                              inviteTimes: { ...prev.inviteTimes, [short]: "08:00" }
+                            }));
+                          }
+                        }}
+                        className={cn(
+                          "h-10 w-full rounded-md border text-sm font-medium transition-colors",
+                          selected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-foreground border-input hover:bg-accent"
+                        )}
+                      >
+                        <span className="hidden sm:inline">{short}</span>
+                        <span className="sm:hidden">{letter}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {formData.inviteDays.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Times</label>
+                  {DAYS_OF_WEEK.filter(({ short }) => formData.inviteDays.includes(short)).map(({ short }) => (
+                    <div key={short} className="flex items-center gap-3">
+                      <span className="w-10 text-sm font-medium">{short}</span>
+                      <Input
+                        type="time"
+                        value={formData.inviteTimes[short] ?? "08:00"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            inviteTimes: { ...prev.inviteTimes, [short]: e.target.value }
+                          }))
+                        }
+                        className="w-36"
+                      />
+                      {/* <TimePicker
+                        value={formData.inviteTimes[short] ?? "08:00"}
+                        onChange={(v) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            inviteTimes: { ...prev.inviteTimes, [short]: v }
+                          }))
+                        }
+                      /> */}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {formData.inviteDays.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  You will be sent invites at{" "}
+                  {DAYS_OF_WEEK.filter(({ short }) => formData.inviteDays.includes(short)).map(({ day, short }, i, arr) => (
+                    <span key={short}>
+                      <strong>{formatTime(formData.inviteTimes[short] ?? "08:00")}</strong> on <strong>{day}</strong>
+                      {i < arr.length - 1 ? ", " : ""}
+                    </span>
+                  ))}
+                </p>
+              )}
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6 w-full">
+            <CardHeader className="px-0 pt-0">
+              <CardTitle>Make Grinvites a trusted sender</CardTitle>
+              <CardDescription>
+                Send the email below to us so invites don't end up in spam.
+              </CardDescription>
+            </CardHeader>
+
+            <div className="flex flex-col items-center gap-4">
+              <div className="rounded-full bg-primary/10 p-6">
+                <Mail className="h-10 w-10 text-primary" />
+              </div>
+              {/* <p className="text-center text-sm text-muted-foreground max-w-xs">
+                Send the email below to <Link to="#">squirrel@grinvites.app</Link> so invites don't end up in spam.
+              </p> */}
+              <Button
+                size="lg"
+                // className="w-full"
+                // variant={"secondary"}
+                onClick={() => {
+                  const subject = encodeURIComponent("Ready to start getting invites");
+                  const body = encodeURIComponent(
+                    "Hi Grinvites,\n\nI'm ready to start getting invites!\n\nThanks"
+                  );
+                  window.location.href = `mailto:squirrel@grinvites.app?subject=${subject}&body=${body}`;
+                  setEmailOpened(true);
+                }}
+              >
+                <SquareArrowOutUpRight className="h-4 w-4" />
+                Open email draft
+              </Button>
+            </div>
+          </div>
+        );
+
+
+      case 4:
+        return (
+          <div className="space-y-6 w-full">
+            <CardHeader className="px-0 pt-0">
+              <CardTitle>Your first invite is on its way!</CardTitle>
+              <CardDescription>
+                We've sent you an invite. Open your calendar or email to accept it.
+              </CardDescription>
+            </CardHeader>
+
+            <div className="flex flex-col items-center gap-2">
+              {/* <div className="rounded-full bg-primary/10 p-6">
+                <Check className="h-10 w-10 text-primary" />
+              </div>
+              <p className="text-center text-sm text-muted-foreground max-w-sm">
+                Check your inbox and calendar for a Grinvites invite.
+              </p> */}
+              <div className="flex gap-3 w-full border-t pt-6">
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => {
+                    const subject = encodeURIComponent("Ready to start getting invites");
+                    const body = encodeURIComponent(
+                      "Hi Grinvites,\n\nI'm ready to start getting invites!\n\nThanks"
+                    );
+                    window.location.href = `mailto:squirrel@grinvites.app?subject=${subject}&body=${body}`;
+                  }}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Resend invite
+                </Button>
+                <Button className="flex-1" onClick={() => navigate("/home")}>
+                  Finish setup
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
   };
 
   return (
-    <div className="flex items-center justify-center p-4">
-      <Card className="w-screen max-w-3xl shadow-lg">
-        <CardHeader className="pb-0">
+    <div className="flex min-h-screen flex-col p-4 items-center justify-center">
+      <Card className="w-full max-w-xl gap-6">
+        <CardHeader className="md:px-12">
           {/* Step Indicator */}
-          <div className="mb-6 flex items-center justify-between">
-            {steps.map((step) => (
-              <div key={step.id} className="relative flex flex-1 flex-col items-center">
+          <div className="flex items-start">
+            {steps.map((step, i) => (
+              <>
                 <div
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors duration-300",
-                    currentStep > step.id
-                      ? "bg-chart-3 text-white"
-                      : currentStep === step.id
-                        ? "bg-primary text-white"
-                        : "bg-gray-200 text-gray-600"
-                  )}>
-                  {currentStep > step.id ? <Check className="h-5 w-5" /> : step.id}
-                </div>
-                <div
-                  className={cn(
-                    "mt-2 text-center text-sm font-medium",
-                    currentStep >= step.id ? "text-gray-800" : "text-gray-500"
-                  )}>
-                  {step.title}
-                </div>
-                {step.id < steps.length && (
+                  key={step.id}
+                  className={cn("flex flex-col items-center gap-2 shrink-0 rounded-lg px-1 py-1 transition-colors", step.id <= currentStep && "cursor-pointer hover:bg-accent")}
+                  onClick={() => step.id <= currentStep && setCurrentStep(step.id)}
+                >
                   <div
                     className={cn(
-                      "absolute top-5 left-[calc(50%+20px)] h-0.5 w-[calc(100%-40px)] -translate-y-1/2 bg-gray-200 transition-colors duration-300",
+                      "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors duration-300",
+                      currentStep > step.id
+                        ? "bg-sidebar-primary text-primary-foreground hover:brightness-110"
+                        : currentStep === step.id
+                          ? "bg-primary font-bold text-primary-foreground hover:brightness-110"
+                          : "bg-gray-200 text-gray-600"
+                    )}>
+                    {currentStep > step.id ? <Check className="h-5 w-5" /> : step.id + 1}
+                  </div>
+                  <span className={cn(
+                    "text-center text-xs font-medium w-16",
+                    currentStep > step.id
+                      ? "text-muted-foreground"
+                      : currentStep === step.id
+                        ? "font-bold text-sidebar-primary"
+                        : "text-muted-foreground"
+                  )}>
+                    {step.title}
+                  </span>
+                </div>
+                {i < steps.length - 1 && (
+                  <div
+                    key={`line-${step.id}`}
+                    className={cn(
+                      "h-0.5 flex-1 mt-5 transition-colors duration-300 bg-gray-200",
                       currentStep > step.id && "bg-sidebar-primary"
                     )}
                   />
                 )}
-              </div>
+              </>
             ))}
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 md:p-8">
+        <CardContent className="px-6 md:px-8">
           {renderStepContent()}
 
           {/* Navigation */}
-          <div className="mt-8 flex items-center justify-between border-t pt-6">
-            <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 1}>
-              <ChevronLeft className="h-4 w-4" />
-              <span>Back</span>
-            </Button>
+          {currentStep < 4 && (
+            <div className="mt-8 flex items-center justify-between border-t pt-6">
+              <Button variant="outline" onClick={handlePrevious} disabled={!currentStep}>
+                <ChevronLeft className="h-4 w-4" />
+                <span>Back</span>
+              </Button>
 
-            <Button onClick={handleNext} disabled={!connected}>
-              <span>{currentStep === 3 ? "Complete" : "Next"}</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+              <Button onClick={handleNext} disabled={isNextDisabled()}>
+                <span>{currentStep === 3 ? "Next" : "Next"}</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
