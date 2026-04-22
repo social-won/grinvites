@@ -67,27 +67,7 @@ def initialize_database():
     connection.close()
     #print("Database initialized successfully.")
 
-def add_user(email, display_name=None, calendar_type=None, prefer_notify=0):
-    connection = sqlite3.connect('test_grinvites.db')
-    cursor = connection.cursor()
-    cursor.execute('''
-        INSERT OR IGNORE INTO users (email, display_name, calendar_type, prefer_notify)
-        VALUES (?, ?, ?, ?)
-    ''', (email, display_name, calendar_type, prefer_notify))
-    connection.commit()
-    connection.close()
-
-def get_user_by_email(email):
-    connection = sqlite3.connect('test_grinvites.db')
-    cursor = connection.cursor()
-    cursor.execute('''
-        SELECT * FROM users WHERE email = ?
-    ''', (email,))
-    user = cursor.fetchone()
-    connection.close()
-    return user
-
-initialize_database()
-add_user("juddbrau@gmail.com", "Judd Brau", "Google Calendar")
-user = get_user_by_email("juddbrau@gmail.com")
-print(user)
+# initialize_database()
+# add_user("juddbrau@gmail.com", "Judd Brau", "Google Calendar")
+# user = get_user_by_email("juddbrau@gmail.com")
+# print(user)
