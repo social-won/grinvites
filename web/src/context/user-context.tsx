@@ -24,6 +24,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     
     if (!session?.user) {
       setUser(null);
+      setLoading(false);
       return;
     }
 
