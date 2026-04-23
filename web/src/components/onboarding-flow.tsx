@@ -20,6 +20,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useUser } from "@/context/user-context";
 import { classesData, hoursData } from "@/lib/api";
 
+const TIMES_OF_DAY = [
+  { label: "Morning", value: "08:00", sub: "8am" },
+  { label: "Midday", value: "12:00", sub: "12pm" },
+  { label: "Afternoon", value: "16:00", sub: "4pm" },
+  { label: "Evening", value: "20:00", sub: "8pm" },
+];
+
 const DAYS_OF_WEEK = [
   { day: "Monday", short: "Mon", letter: "M" },
   { day: "Tuesday", short: "Tue", letter: "T" },
@@ -252,18 +259,14 @@ export default function OnboardingFlow() {
                         key={short}
                         type="button"
                         onClick={() => {
-                          if (selected) {
-                            const updatedDays = formData.inviteDays.filter((d) => d !== short);
-                            const updatedTimes = { ...formData.inviteTimes };
-                            delete updatedTimes[short];
-                            setFormData((prev) => ({ ...prev, inviteDays: updatedDays, inviteTimes: updatedTimes }));
-                          } else {
-                            setFormData((prev) => ({
-                              ...prev,
-                              inviteDays: [...prev.inviteDays, short],
-                              inviteTimes: { ...prev.inviteTimes, [short]: "08:00" }
-                            }));
-                          }
+                          setFormData((prev) => {
+                            if (selected) {
+                              const updatedTimes = { ...prev.inviteTimes };
+                              delete updatedTimes[short];
+                              return { ...prev, inviteDays: prev.inviteDays.filter((d) => d !== short), inviteTimes: updatedTimes };
+                            }
+                            return { ...prev, inviteDays: [...prev.inviteDays, short], inviteTimes: { ...prev.inviteTimes, [short]: "08:00" } };
+                          });
                         }}
                         className={cn(
                           "h-10 w-full rounded-md border text-sm font-medium transition-colors",
@@ -281,31 +284,32 @@ export default function OnboardingFlow() {
               </div>
 
               {formData.inviteDays.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Times</label>
-                  {DAYS_OF_WEEK.filter(({ short }) => formData.inviteDays.includes(short)).map(({ short }) => (
-                    <div key={short} className="flex items-center gap-3">
-                      <span className="w-10 text-sm font-medium">{short}</span>
-                      <Input
-                        type="time"
-                        value={formData.inviteTimes[short] ?? "08:00"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            inviteTimes: { ...prev.inviteTimes, [short]: e.target.value }
-                          }))
-                        }
-                        className="w-36"
-                      />
-                      {/* <TimePicker
-                        value={formData.inviteTimes[short] ?? "08:00"}
-                        onChange={(v) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            inviteTimes: { ...prev.inviteTimes, [short]: v }
-                          }))
-                        }
-                      /> */}
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm font-medium">Time of day</label>
+                  {DAYS_OF_WEEK.filter(({ short }) => formData.inviteDays.includes(short)).map(({ short, day }) => (
+                    <div key={short} className="flex flex-col gap-1.5">
+                      <span className="text-xs text-muted-foreground">{day}</span>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {TIMES_OF_DAY.map(({ label, value, sub }) => {
+                          const selected = (formData.inviteTimes[short] ?? "08:00") === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, inviteTimes: { ...prev.inviteTimes, [short]: value } }))}
+                              className={cn(
+                                "flex flex-col items-center justify-center h-14 rounded-md border text-sm font-medium transition-colors",
+                                selected
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background text-foreground border-input hover:bg-accent"
+                              )}
+                            >
+                              <span>{label}</span>
+                              <span className="text-xs opacity-70">{sub}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -313,10 +317,9 @@ export default function OnboardingFlow() {
 
               {formData.inviteDays.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  You will be sent invites at{" "}
                   {DAYS_OF_WEEK.filter(({ short }) => formData.inviteDays.includes(short)).map(({ day, short }, i, arr) => (
                     <span key={short}>
-                      <strong>{formatTime(formData.inviteTimes[short] ?? "08:00")}</strong> on <strong>{day}</strong>
+                      <strong>{day}</strong> at <strong>{formatTime(formData.inviteTimes[short] ?? "08:00")}</strong>
                       {i < arr.length - 1 ? ", " : ""}
                     </span>
                   ))}
