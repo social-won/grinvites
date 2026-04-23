@@ -5,13 +5,22 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
 import ScheduleTab from './tabs/schedule-tab'
 import HoursTab from './tabs/hours-tab'
 import PreferencesTab from './tabs/preferences-tab'
 import { useUser } from '@/context/user-context'
+import { useNavigate } from 'react-router-dom'
+import supabase from '@/lib/supabase'
 
 const HomeScreen: FC = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,15 +33,18 @@ const HomeScreen: FC = () => {
             <span className="text-sm text-muted-foreground">
               Logged in as: <span className="font-medium text-foreground">{user?.email}</span>
             </span>
+            <Button variant="destructive" size="sm" onClick={handleSignOut} className="sm:hidden">Sign out</Button>
           </div>
 
           <TabsList variant="default" className="bg-transparent border px-2 w-full sm:w-auto">
-            <TabsTrigger value="schedule" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Schedule</TabsTrigger>
-            <TabsTrigger value="hours" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Hours</TabsTrigger>
+            <TabsTrigger disabled value="schedule" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Schedule</TabsTrigger>
+            <TabsTrigger disabled value="hours" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Hours</TabsTrigger>
             <TabsTrigger value="preferences" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Preferences</TabsTrigger>
           </TabsList>
 
-          <div className="hidden sm:flex sm:flex-1 sm:justify-end"></div>
+          <div className="hidden sm:flex sm:flex-1 sm:justify-end">
+            <Button variant="destructive" size="sm" onClick={handleSignOut}>Sign out</Button>
+          </div>
         </div>
 
         <div className="w-full max-w-xl mx-auto">
