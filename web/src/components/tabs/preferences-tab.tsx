@@ -16,12 +16,17 @@ import {
 import { useUser } from '@/context/user-context'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Badge } from '../ui/badge'
+import supabase from '@/lib/supabase'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '../ui/button'
 
 interface PreferencesState {
   sendInvitesAt: string
 }
 
 const PreferencesTab: FC = () => {
+  const navigate = useNavigate();
+
   const [schedulePreferences, setSchedulePreferences] = useState<PreferencesState>({
     sendInvitesAt: '5:00am',
   })
@@ -47,6 +52,11 @@ const PreferencesTab: FC = () => {
       [category]: prev[category].filter((i) => i !== item),
     }))
   }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
+  };
 
   return (
     <div className="p-6 space-y-6 w-full">
@@ -160,6 +170,10 @@ const PreferencesTab: FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Button variant="destructive" onClick={handleSignOut} className="w-full">
+        Sign out
+      </Button>
     </div>
   )
 }
