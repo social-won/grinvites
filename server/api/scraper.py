@@ -1,115 +1,146 @@
-#import requests
+import requests
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
+from datetime import datetime, timedelta
+
 # Source: https://realpython.com/beautiful-soup-web-scraper-python/
 # Source: https://scrapfly.io/blog/posts/web-scraping-with-playwright-and-python
+# Source: https://github.com/seehorne/GetGrinnected
 
-BASE_URL = "https://events.grinnell.edu/"
+JSON_URL = "https://events.grinnell.edu/live/json/events/response_fields/all/paginate"
+
 
 # Helper function to clean text by removing extra whitespace
 def clean_text(text):
     if text is None:
         return None
-    # Replace all whitespace characters with a single space and trim leading/trailing whitespace
-    return " ".join(text.split())
-
-# # Helper function to extract organization/category tags from the event div classes
-def clean_categories(class_list):
-    categories = []
-
-    for class_name in class_list:
-        if class_name.startswith("lw_tag_"):
-            cat_name = class_name.replace("lw_tag_", "")
-            categories.append(cat_name)
-        if class_name.startswith("lw_category_"):
-            cat_name = class_name.replace("lw_category_", "")
-            categories.append(cat_name)
-
-    return categories
+    return " ".join(str(text).split())
 
 
-# Helper function to get the fully rendered HTML of the events page using Playwright
-def get_rendered_html():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        # Open new page in browser
-        page = browser.new_page()
+# Helper function to remove HTML tags from JSON fields like summary/description
+def clean_html(html_text):
+    if html_text is None:
+        return None
 
-        # Go to events website
-        page.goto(BASE_URL)
+    soup = BeautifulSoup(html_text, "html.parser")
+    return clean_text(soup.get_text(" "))
 
-        # Wait until event blocks actually appear in the rendered page
-        page.wait_for_selector("div.lw_cal_event")
 
-        html = page.content()
+# Helper function to fetch one JSON page
+def get_json_page(page_num):
+    url = JSON_URL + "?page=" + str(page_num)
 
-        browser.close()
-        return html
+    return requests.get(url).json()
 
-# Q: What should id value be? event title?
 
+# Scrape events from the LiveWhale JSON endpoint
 def scrape_events():
-    # Get the fully rendered webpage HTML using Playwright
-    html = get_rendered_html()
-
-    # Parse the HTML with beautiful soup
-    soup = BeautifulSoup(html, "html.parser")
-
-    # Find all event div blocks
-    event_chunks = soup.find_all("div", class_="lw_cal_event")
-
     events = []
 
-    # Loop through each event
-    for chunk in event_chunks:
+    # Get first page so we can learn how many total pages exist
+    first_page = get_json_page(1)
 
-        # Get the classes attached to this event div
-        class_list = chunk.get("class", [])
+    # The JSON file includes meta.total_pages, e.g. page 9 of 9 in your pasted file
+    total_pages = first_page["meta"]["total_pages"]
 
-        # Extract category tags from the class names
-        categories = clean_categories(class_list)
+    # Go through every page
+    for i in range(1, total_pages + 1):
+        page_json = get_json_page(i)
 
-        # Parsing title
-        title_div = chunk.find("div", class_="lw_events_title")
-        title_element = title_div.find("a") if title_div else None        
-        title = clean_text(title_element.get_text()) if title_element else None
+        # Each page stores event records inside the "data" list
+        raw_events = page_json.get("data", [])
 
-        # Parsing event start and end times
-        start_time_el = chunk.find("span", class_="lw_start_time")
-        end_time_el = chunk.find("span", class_="lw_end_time")
+        for event in raw_events:
 
-        start_time = clean_text(start_time_el.get_text()) if start_time_el else None
-        end_time = clean_text(end_time_el.get_text()) if end_time_el else None
+            #Get id
+            id = clean_text(event.get("id"))
 
-        # Parsing event location
-        location_el = chunk.find("div", class_="lw_events_location")
-        location = clean_text(location_el.get_text()) if location_el else None
+            # Get title
+            title = clean_text(event.get("title"))
 
-        # Parsing event description
-        summary_el = chunk.find("div", class_="lw_events_summary")
-        summary = clean_text(summary_el.get_text()) if summary_el else None
+            # Get start and end time
+            if event.get("date_time") is None:
+                start_time = "12 a.m."
+            else:
+                start_time = clean_text(event.get("date_time"))
 
-        # Some events only have one time stated in the end time, so we can move that to the start time and set end time to None
-        if start_time is None and end_time is not None:
-            start_time = end_time
-            end_time = None
+            if event.get("date2_time") is None:
+                end_time = "11:59 p.m."
+            else:
+                end_time = clean_text(event.get("date2_time"))
 
-        # Storing event data in a dictionary and appending to events list
-        events.append({
-            "title": title,
-            "start_time": start_time,
-            "end_time": end_time,
-            "location": location,
-            "summary": summary,
-            "categories": categories
-        })
+            # Get location
+            location = clean_text(event.get("location"))
+
+            # Get event summary/description
+            summary = clean_html(event.get("summary"))
+
+            # Summary/description could be in either summary or description field
+            if summary is None:
+                summary = clean_html(event.get("description"))
+
+            categories = []
+            # Get event types if any
+            if event.get("event_types"):  
+                categories = event.get("event_types")
+
+            tags = []
+            # Get event tags if any
+            if event.get("tags"):
+                tags = event.get("tags")
+
+            # Create event dictionary and add to list                        
+            events.append({
+                "id": id,
+                "title": title,
+                "start_time": start_time,
+                "end_time": end_time,
+                "location": location,
+                "summary": summary,
+                "categories": categories,
+                "tags": tags,
+                "frequency": None
+            })
 
     return events
 
-# run manually (for testing)
+# Helper function to find frequency of events with the same title. O(n) runtime
+# Limits search to events within the next month to avoid counting events that are far apart in time and not actually recurring. 
+# Updates the original events list with frequency information for recurring events.
+# def frequency_finder(events):
+#     # Filter events to only those from now till 30 days from now
+#     now = datetime.now()
+#     month_start = now
+#     month_end = now + timedelta(days=30)
+    
+#     filtered_events = []
+#     for event in events:
+#         start_dt = datetime.fromisoformat(event["start_time"])
+#         if start_dt > month_end:
+#             break
+#         filtered_events.append(event)
+    
+#     # Now find frequencies in the filtered events
+#     frequency_dict = dict()
+#     for event in filtered_events:
+#         title = event["title"]
+#         if title not in frequency_dict:
+#             frequency_dict[title] = []
+#             frequency_dict[title].append(event.get("id"))
+#         else:
+#             frequency_dict[title].append(event.get("id"))
+
+#     # Update the original events list with frequencies for recurring events
+#     for title in frequency_dict:
+#         if len(frequency_dict[title]) > 2:
+#             for id in frequency_dict[title]:
+#                 events.get
+
+
+# run manually for testing
 if __name__ == "__main__":
     events = scrape_events()
-    print("Number of events found:", len(events))
-    
+
     for event in events:
         print(event, "\n\n")
+    
+    print("Number of events found:", len(events))
