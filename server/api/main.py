@@ -79,7 +79,7 @@ async def create_user(user_data: UserCreate):
 #     return current_user
 
 # Get user object
-@app.get("/user/{user_id}")
+@app.get("/users/{user_id}")
 async def read_user(user_id):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -97,8 +97,8 @@ async def read_user(user_id):
     return user
 
 # Update user object
-@app.put("/user/{user_id}")
-async def set_user(user_id, user_data: UserCreate):
+@app.put("/users/{user_id}")
+async def update_user(user_id, user_data: UserCreate):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET email=?, display_name=?, calendar_type=?, prefer_notify=? WHERE id=?", 
@@ -114,7 +114,7 @@ async def set_user(user_id, user_data: UserCreate):
     )
 
 # Get user interests
-@app.get("/user/{user_id}/interests")
+@app.get("/users/{user_id}/interests")
 async def read_user_interests(user_id):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -129,14 +129,14 @@ async def read_user_interests(user_id):
         raise HTTPException(status_code=404, detail="User not found")
     return interests
 
-# # Update user interests
-# @app.put("/user/{user_id}/interests")
-# async def set_user_interests(user_id):
-#     conn = sqlite3.connect("database.db")
-#     cursor = conn.cursor()
-#     cursor.execute("INSERT INTO interests (id) VALUES (?)", (user_id,))
-#     conn.close()
-#     pass
+# Update user interests
+@app.put("/user/{user_id}/interests")
+async def set_user_interests(user_id):
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO interests (id) VALUES (?)", (user_id,))
+    conn.close()
+    pass
 
 
 
