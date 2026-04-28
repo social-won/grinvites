@@ -6,6 +6,8 @@ def initialize_database():
     cursor = connection.cursor()
 
     cursor.execute("DROP TABLE IF EXISTS events")
+    cursor.execute("DROP TABLE IF EXISTS event_interests")
+    cursor.execute("DROP TABLE IF EXISTS interests")
 
     #creates all necessary tables for the application
     #users table
@@ -24,7 +26,7 @@ def initialize_database():
         CREATE TABLE IF NOT EXISTS interests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            type TEXT NOT NULL
+            type TEXT
     )         
     ''')
 
@@ -71,8 +73,3 @@ def initialize_database():
     connection.commit()
     connection.close()
     #print("Database initialized successfully.")
-
-# initialize_database()
-# add_user("juddbrau@gmail.com", "Judd Brau", "Google Calendar")
-# user = get_user_by_email("juddbrau@gmail.com")
-# print(user)
