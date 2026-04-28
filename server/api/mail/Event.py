@@ -39,9 +39,9 @@ class RequestEvent(Event):
                         organizer=organizer,
                         transparency=transparency)
 
-    @classmethod
-    def GrinvitesEvent():
-        
+    # @classmethod
+    # def GrinvitesEvent():
+
     @classmethod
     def test_example(cls):
         return cls.new()
