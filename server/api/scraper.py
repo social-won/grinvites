@@ -33,6 +33,43 @@ def get_json_page(page_num):
 
     return requests.get(url).json() 
 
+#adds interest to interest table
+def add_interest(cursor, name, type="organization"):
+    if not name:
+        return
+    name = clean_text(name).lower()
+    cursor.execute('''
+        INSERT OR IGNORE INTO interests (name, type)
+        VALUES (?, ?)
+    ''', (name, type))
+
+#gets the id of an interest
+def get_interest_id(cursor, name):
+    if not name:
+        return None
+    name = clean_text(name).lower()
+    cursor.execute('''
+        SELECT id FROM interests WHERE LOWER(name) = ?
+    ''', (name,))
+    result = cursor.fetchone()
+    return result[0] if result else None
+
+#adds event interest to events interest table
+def add_event_interest(cursor, name, event_id):
+    interest_id = get_interest_id(cursor, name)
+    if not interest_id:
+        return
+    cursor.execute('''
+        INSERT OR IGNORE INTO event_interests (event_id, interest_id)
+        VALUES (?, ?)
+    ''', (event_id, interest_id))
+
+def get_interest_by_id(interest_id, interests):
+    for interest in interests:
+        if interest[0] == interest_id:
+            return interest[1]
+    return None
+
 
 # Scrape events from the LiveWhale JSON endpoint
 def scrape_events():
@@ -42,6 +79,8 @@ def scrape_events():
     cursor = connection.cursor()
 
     cursor.execute("DELETE FROM events")
+    cursor.execute("DELETE FROM interests")
+    cursor.execute("DELETE FROM event_interests")
 
     events = {}
 
@@ -106,6 +145,7 @@ def scrape_events():
             if event.get("custom_organization"):
                 org_name = clean_text(event.get("custom_organization"))
 
+
             # Create event dictionary and add to list                        
             events[id] = {
                 "id": id,
@@ -140,6 +180,12 @@ def scrape_events():
                 # event["frequency"] # Will include soon
             ))
 
+            event_id = cursor.lastrowid
+
+            if org_name:
+                add_interest(cursor, org_name)
+                add_event_interest(cursor, org_name, event_id)
+            
             inserted_count += 1
         
     connection.commit()
@@ -194,6 +240,18 @@ def test_db():
     ''')
     
     events = cursor.fetchall()
+
+    cursor.execute('''
+        SELECT id, name 
+        FROM interests
+    ''')
+    interests = cursor.fetchall()
+
+    cursor.execute('''
+        SELECT event_id, interest_id 
+        FROM event_interests
+    ''')
+    event_interests = cursor.fetchall()
     connection.close()
     
     print("\nFirst 5 events in database:")
@@ -209,6 +267,17 @@ def test_db():
         print("Tags:", event[8])
         print("Org Name:", event[9])
         print("Frequency:", event[10])
+        print()
+    
+    for interest in interests:
+        print("Interest ID:", interest[0])
+        print("Interest Name:", interest[1])
+        print()
+    
+    for event_interest in event_interests:
+        print("Event ID:", event_interest[0])
+        print("Interest ID:", event_interest[1])
+        print("Interest Name:", get_interest_by_id(event_interest[1], interests))
         print()
         
 
