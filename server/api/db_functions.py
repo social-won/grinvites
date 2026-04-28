@@ -36,7 +36,7 @@ def get_user_by_email(email):
     connection.close()
     return user
 
-def get_event_by_id(event_id): 
+def get_event_by_id(event_id):
     connection = sqlite3.connect('test_grinvites.db')
     cursor = connection.cursor()
     cursor.execute('''
