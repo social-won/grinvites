@@ -4,6 +4,7 @@ import { SignupPage } from './components/signup-form.tsx'
 import { LoginForm } from './components/login-form.tsx'
 import OnboardingFlow from './components/onboarding-flow.tsx'
 import HomeScreen from './components/home-screen.tsx'
+import ProtectedRoute from './components/protected-route.tsx'
 
 const App: FC = () => {
   return (
@@ -11,8 +12,8 @@ const App: FC = () => {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/home" element={<HomeScreen />} />
-      <Route path="/onboarding" element={<OnboardingFlow />} />
+      <Route path="/home" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />
+      <Route path="/onboarding" element={<ProtectedRoute><OnboardingFlow /></ProtectedRoute>} />
     </Routes>
   )
 }
