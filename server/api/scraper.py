@@ -1,6 +1,8 @@
 import requests
+import sqlite3
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from sql_init import initialize_database
 
 # Source: https://realpython.com/beautiful-soup-web-scraper-python/
 # Source: https://scrapfly.io/blog/posts/web-scraping-with-playwright-and-python
@@ -29,12 +31,21 @@ def clean_html(html_text):
 def get_json_page(page_num):
     url = JSON_URL + "?page=" + str(page_num)
 
-    return requests.get(url).json()
+    return requests.get(url).json() 
 
 
 # Scrape events from the LiveWhale JSON endpoint
 def scrape_events():
-    events = []
+    initialize_database()
+
+    connection = sqlite3.connect("test_grinvites.db")
+    cursor = connection.cursor()
+
+    cursor.execute("DELETE FROM events")
+
+    events = {}
+
+    inserted_count = 0
 
     # Get first page so we can learn how many total pages exist
     first_page = get_json_page(1)
@@ -54,6 +65,9 @@ def scrape_events():
             #Get id
             id = clean_text(event.get("id"))
 
+            if id in events:
+                continue
+
             # Get title
             title = clean_text(event.get("title"))
 
@@ -61,12 +75,12 @@ def scrape_events():
             if event.get("date_time") is None:
                 start_time = "12 a.m."
             else:
-                start_time = clean_text(event.get("date_time"))
+                start_time = clean_text(event.get("date_iso"))
 
             if event.get("date2_time") is None:
                 end_time = "11:59 p.m."
             else:
-                end_time = clean_text(event.get("date2_time"))
+                end_time = clean_text(event.get("date2_iso"))
 
             # Get location
             location = clean_text(event.get("location"))
@@ -78,19 +92,24 @@ def scrape_events():
             if summary is None:
                 summary = clean_html(event.get("description"))
 
-            categories = []
+            categories = ""
             # Get event types if any
             if event.get("event_types"):  
-                categories = event.get("event_types")
+                categories = ",".join(event.get("event_types"))
 
-            tags = []
+            tags = ""
             # Get event tags if any
             if event.get("tags"):
-                tags = event.get("tags")
+                tags = ",".join(event.get("tags"))
+
+            org_name = ""
+            if event.get("custom_organization"):
+                org_name = clean_text(event.get("custom_organization"))
 
             # Create event dictionary and add to list                        
-            events.append({
+            events[id] = {
                 "id": id,
+                "creation_time_stamp": (datetime.now(timezone.utc)).isoformat(),
                 "title": title,
                 "start_time": start_time,
                 "end_time": end_time,
@@ -98,12 +117,38 @@ def scrape_events():
                 "summary": summary,
                 "categories": categories,
                 "tags": tags,
+                "org_name": org_name,
                 "frequency": None
-            })
+            }
+
+            cursor.execute('''
+                INSERT INTO events (
+                    id, creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                id,
+                (datetime.now(timezone.utc)).isoformat(),
+                title,
+                start_time,
+                end_time,
+                location,
+                summary,
+                categories,
+                tags,
+                org_name
+                # event["frequency"] # Will include soon
+            ))
+
+            inserted_count += 1
+        
+    connection.commit()
+    connection.close()
+
+    print("Inserted " + str(inserted_count) + " events into the database.")
 
     return events
-
-# Helper function to find frequency of events with the same title. O(n) runtime
+# Helper function to find frequency of events with the same title.
 # Limits search to events within the next month to avoid counting events that are far apart in time and not actually recurring. 
 # Updates the original events list with frequency information for recurring events.
 # def frequency_finder(events):
@@ -112,16 +157,16 @@ def scrape_events():
 #     month_start = now
 #     month_end = now + timedelta(days=30)
     
-#     filtered_events = []
-#     for event in events:
+#     events_within_30days = {}
+#     for event in events.values():
 #         start_dt = datetime.fromisoformat(event["start_time"])
 #         if start_dt > month_end:
 #             break
-#         filtered_events.append(event)
-    
+#         events_within_30days[event["id"]] = event
+
 #     # Now find frequencies in the filtered events
 #     frequency_dict = dict()
-#     for event in filtered_events:
+#     for event in events_within_30days.values():
 #         title = event["title"]
 #         if title not in frequency_dict:
 #             frequency_dict[title] = []
@@ -132,15 +177,44 @@ def scrape_events():
 #     # Update the original events list with frequencies for recurring events
 #     for title in frequency_dict:
 #         if len(frequency_dict[title]) > 2:
-#             for id in frequency_dict[title]:
-#                 events.get
 
+#             for id in frequency_dict[title]:
+#                 events[id]["frequency"] = 
+
+# Tests if events were successfully inserted into the database by fetching and printing the first 5 events.
+def test_db():
+    connection = sqlite3.connect("test_grinvites.db")
+    cursor = connection.cursor()
+
+    cursor.execute('''
+        SELECT id, creation_time_stamp, title, start_time, end_time,
+            location, summary, categories, tags, org_name, frequency
+        FROM events
+        LIMIT 5
+    ''')
+    
+    events = cursor.fetchall()
+    connection.close()
+    
+    print("\nFirst 5 events in database:")
+    for event in events:
+        print("ID:", event[0])
+        print("Created:", event[1])
+        print("Title:", event[2])
+        print("Start:", event[3])
+        print("End:", event[4])
+        print("Location:", event[5])
+        print("Summary:", event[6])
+        print("Categories:", event[7])
+        print("Tags:", event[8])
+        print("Org Name:", event[9])
+        print("Frequency:", event[10])
+        print()
+        
 
 # run manually for testing
 if __name__ == "__main__":
     events = scrape_events()
-
-    for event in events:
-        print(event, "\n\n")
+    test_db()
     
     print("Number of events found:", len(events))

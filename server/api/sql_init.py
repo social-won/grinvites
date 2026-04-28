@@ -5,6 +5,8 @@ def initialize_database():
     connection = sqlite3.connect('test_grinvites.db')
     cursor = connection.cursor()
 
+    cursor.execute("DROP TABLE events")
+
     #creates all necessary tables for the application
     #users table
     cursor.execute('''
@@ -41,12 +43,15 @@ def initialize_database():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            creation_time_stamp TEXT NOT NULL,
             title TEXT NOT NULL,
-            org_name TEXT,
-            description TEXT,
             start_time TEXT NOT NULL,
             end_time TEXT,
             location TEXT,
+            summary TEXT,
+            categories TEXT,
+            tags TEXT,
+            org_name TEXT,
             frequency TEXT
     )
     ''')
