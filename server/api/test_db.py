@@ -1,7 +1,7 @@
-import sqlite3
 import unittest
 import os
-from db_functions import add_user, add_event, get_users, get_events, get_user_by_email, update_user_interests, get_user_interests, update_event_interests, get_event_interests, get_event_by_title
+from db_functions import * 
+# add_user, add_event, get_users, get_events, get_user_by_email, update_user_interests, get_user_interests, update_event_interests, get_event_interests, get_event_by_title
 from sql_init import initialize_database
 
 class TestDatabaseFunctions(unittest.TestCase):
