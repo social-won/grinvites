@@ -77,13 +77,13 @@ def get_user_interests(email):
     connection.close()
     return user_interests
 
-def add_event(title, org_name, description, start_time, end_time, location, frequency):
+def add_event(title, start_time, end_time, location, summary = None, categories = None, tags = None, org_name = None, frequency = None):
     connection = sqlite3.connect('test_grinvites.db')
     cursor = connection.cursor()
     cursor.execute('''
-        INSERT INTO events (creation_time_stamp, title, start_time, end_time, location, summary, org_name, frequency)
-        VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?)
-    ''', (title, start_time, end_time, location, description, org_name, frequency))
+        INSERT INTO events (creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name, frequency)
+        VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (title, start_time, end_time, location, summary, categories, tags, org_name, frequency))
     connection.commit()
     connection.close()
 
@@ -107,6 +107,16 @@ def get_event_by_title(title):
     event = cursor.fetchone()
     connection.close()
     return event
+
+def get_event_by_time(initial_start_time, final_start_time):
+    connection = sqlite3.connect('test_grinvites.db')
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT * FROM events WHERE start_time >= ? AND start_time <= ?
+    ''', (initial_start_time, final_start_time))
+    events = cursor.fetchall()
+    connection.close()
+    return events
 
 #Updates an event's interests or adds them if non exist.
 def update_event_interests(event_title, interest_ids):
