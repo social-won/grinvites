@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 #import user
 from pydantic import BaseModel
+from typing import List
 import sqlite3
 
 class User(BaseModel):
@@ -26,6 +27,14 @@ class Event(BaseModel):
     end_time: str
     location: str
     interests: str
+
+class Interests(BaseModel):
+    id: int
+    name: str
+    type: str
+
+class UserInterestsUpdate(BaseModel):
+    interest_ids: List[int]
 
 
 # Written following https://fastapi.tiangolo.com/tutorial/
@@ -130,13 +139,18 @@ async def read_user_interests(user_id):
     return interests
 
 # Update user interests
-@app.put("/user/{user_id}/interests")
-async def set_user_interests(user_id):
+@app.put("/users/{user_id}/interests")
+async def update_user_interests(user_id: int, interests_data: UserInterestsUpdate):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO interests (id) VALUES (?)", (user_id,))
+    # Delete existing interests for the user
+    #cursor.execute("DELETE FROM user_interests WHERE user_id = ?", (user_id,))
+    # Insert new interests
+    for interest_id in interests_data.interest_ids:
+        cursor.execute("INSERT INTO user_interests (user_id, interest_id) VALUES (?, ?)", (user_id, interest_id))
+    conn.commit()
     conn.close()
-    pass
+    return {"message": "User interests updated successfully"}
 
 
 
