@@ -21,21 +21,9 @@ export const signupSchema = z
     message: "Passwords must match",
   })
 
-export type SignupFormValues = z.infer<typeof signupSchema>
 
 export const loginSchema = z.object({
   email: z.email(),
   password: z.string().min(6, "Password must be at least 6 characters"),
 })
 
-export type LoginFormValues = z.infer<typeof loginSchema>
-
-
-
-export interface GrinvitesUser {
-  id: string;
-  email: string;
-  display_name?: string;
-  calendar_type?: string;
-  prefer_notify: 0;
-}

@@ -1,36 +1,46 @@
+import json
+import sqlite3
+import os
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 #import user
 from pydantic import BaseModel
 from typing import List
 import sqlite3
+from datetime import datetime
 
-class User(BaseModel):
-    id: int
-    email: str
-    display_name: str
-    calendar_type: str
-    prefer_notify: int
+from contextlib import asynccontextmanager
+import asyncio
 
-class UserCreate(BaseModel):
-    email: str
-    display_name: str
-    calendar_type: str
-    prefer_notify: int
+from api.sql_init import initialize_database
+from models import User, UserInterestsUpdate
+from api.db_functions import *
+from api.scraper import scrape_events
 
-class Event(BaseModel):
-    id: int
-    name: str
-    organization: str
-    description: str
-    start_time: str
-    end_time: str
-    location: str
-    interests: str
+async def my_daemon():
+    print("hi!!!")
 
+<<<<<<< HEAD:server/api/main.py
+=======
+    while True:
+        # check for updates, send emails, etc.
+        print("hello!", datetime.now().isoformat())
+        await asyncio.sleep(60)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if os.getenv("E2E_TESTING"):
+        initialize_database()
+        scrape_events()
+        
+    task = asyncio.create_task(my_daemon())
+    yield
+    task.cancel()
+>>>>>>> eb1df5303221154dde77a2937b80e3b43c08dbe0:server/main.py
 
 # Written following https://fastapi.tiangolo.com/tutorial/
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost:5173",
@@ -45,27 +55,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/users")
-async def create_user(user_data: UserCreate):
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO users (email, display_name, calendar_type, prefer_notify)
-        VALUES (?, ?, ?, ?)
-    ''', (user_data.email, user_data.display_name, user_data.calendar_type, user_data.prefer_notify))
+@app.post("/users", status_code=201)
+async def create_user(user_data: User):
+    try:
+       add_user(user_data)
+    except sqlite3.OperationalError as e:
+      raise HTTPException(status_code=500, detail=str(e))
     
-    user_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    
-    # Return the created user with the generated ID
-    return User(
-        id=user_id,
-        email=user_data.email,
-        display_name=user_data.display_name,
-        calendar_type=user_data.calendar_type,
-        prefer_notify=user_data.prefer_notify
-    )
 
 # I'm not sure how many of these endpoints should be for a general user and for the current user, if we even need the general case?
 
@@ -82,42 +78,29 @@ async def create_user(user_data: UserCreate):
 # Get user object
 @app.get("/users/{user_id}")
 async def read_user(user_id):
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    cursor.execute("PRAGMA table_info(users)")
-    table_info = cursor.fetchall()
-    column_names = []
-    for row in table_info:
-        column_names.append(row[1])
-    user = dict(zip(column_names, user))
-    conn.close()
+    user = get_user(user_id)
+    
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     return user
 
 # Update user object
 @app.put("/users/{user_id}")
-async def update_user(user_id, user_data: UserCreate):
-    conn = sqlite3.connect("database.db")
+async def update_user(user_id, user_data: User):
+    #TODO: Refactor this to db_functions.py
+    conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET email=?, display_name=?, calendar_type=?, prefer_notify=? WHERE id=?", 
-                   (user_data.email, user_data.display_name, user_data.calendar_type, user_data.prefer_notify, user_id))
+    cursor.execute("UPDATE users SET email=?, display_name=?, invite_times=? WHERE id=?", 
+                   (user_data.email, user_data.display_name, json.dumps(user_data.invite_times), user_id))
     conn.commit()
     conn.close()
-    return User(
-        id=user_id,
-        email=user_data.email,
-        display_name=user_data.display_name,
-        calendar_type=user_data.calendar_type,
-        prefer_notify=user_data.prefer_notify
-    )
+    
 
 # Get user interests
 @app.get("/users/{user_id}/interests")
 async def read_user_interests(user_id):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT interests FROM users WHERE id = ?", (user_id,))
     interests_pulled = cursor.fetchall()
@@ -131,20 +114,30 @@ async def read_user_interests(user_id):
     return interests
 
 # Update user interests
+<<<<<<< HEAD:server/api/main.py
 @app.put("/user/{user_id}/interests")
 async def set_user_interests(user_id):
     conn = sqlite3.connect("database.db")
+=======
+@app.put("/users/{user_id}/interests")
+async def update_user_interests(user_id: int, interests_data: UserInterestsUpdate):
+    conn = get_db()
+>>>>>>> eb1df5303221154dde77a2937b80e3b43c08dbe0:server/main.py
     cursor = conn.cursor()
     cursor.execute("INSERT INTO interests (id) VALUES (?)", (user_id,))
     conn.close()
     pass
 
 
+@app.get("/interests")
+async def read_interests():
+    return get_interests()
+
 
 # Get event object
 @app.get("/events/{event_id}")
 async def read_event(event_id):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
     event_info = cursor.fetchall()
