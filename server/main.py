@@ -16,11 +16,24 @@ from api.sql_init import initialize_database
 from models import User, UserInterestsUpdate
 from api.db_functions import add_user, get_db, get_user
 
+async def my_daemon():
+    print("hi!!!")
 
-if os.getenv("E2E_TESTING"):
-    initialize_database()
+    while True:
+        # check for updates, send emails, etc.
+        print("hello!", datetime.now().isoformat())
+        await asyncio.sleep(60)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if os.getenv("E2E_TESTING"):
+        initialize_database()
+    task = asyncio.create_task(my_daemon())
+    yield
+    task.cancel()
+
 # Written following https://fastapi.tiangolo.com/tutorial/
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost:5173",
