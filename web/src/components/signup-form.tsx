@@ -20,8 +20,9 @@ import { Controller, useForm, UseFormReturn } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import supabase from "@/lib/supabase"
 
-import { SignupFormValues, signupSchema } from "@/lib/utils"
+import { signupSchema } from "@/lib/utils"
 import { createUser } from "@/lib/api"
+import { SignupFormValues } from "@/lib/types"
 
 export function SignupPage() {
   const navigate = useNavigate()
@@ -62,7 +63,12 @@ export function SignupPage() {
     }
 
     if (data.user) {
-      createUser(data.user)
+      createUser({
+        id: data.user.id,
+        email: data.user.email!!,
+        display_name: data.user.user_metadata.display_name,
+        invite_times: {}
+      })
 
       navigate("/onboarding")
     }
@@ -196,7 +202,7 @@ export function SignupForm({ form, onSubmit }: { form: UseFormReturn<SignupFormV
   )
 }
 
-function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues> }) {
+function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues>, setPage: React.Dispatch<React.SetStateAction<number>> }) {
 
 
   return (
