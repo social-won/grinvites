@@ -123,17 +123,15 @@ describe("createUser / getUser", () => {
 // Schedule
 // ---------------------------------------------------------------------------
 
-// describe("updateUserSchedule / getUserSchedule", () => {
+// describe("updateUserInviteSchedule / getUserInviteSchedule", () => {
 //     skip("saves a schedule and reads it back", async () => {
-//         const days = ["Mon", "Wed", "Fri"];
 //         const times = { Mon: "08:00", Wed: "12:00", Fri: "17:00" };
 
-//         await updateUserSchedule(TEST_UID, days, times);
+//         await updateUserSchedule(TEST_UID, times);
 
 //         const saved = await getUserSchedule(TEST_UID);
 //         expect(saved).not.toBeNull();
-//         expect(saved!.invite_days).toEqual(days);
-//         expect(saved!.invite_times).toEqual(times);
+//         expect(saved).toEqual(times);
 //     });
 
 //     skip("overwrites a previously saved schedule", async () => {
@@ -146,46 +144,48 @@ describe("createUser / getUser", () => {
 //     });
 // });
 
-// // ---------------------------------------------------------------------------
-// // Interests
-// // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Interests
+// ---------------------------------------------------------------------------
 
-// describe("getInterests", () => {
-//     skip("returns an array of interests", async () => {
-//         const interests = await getInterests();
-//         expect(Array.isArray(interests)).toBe(true);
-//     });
-// });
+describe("getInterests", () => {
+    skip("returns an array of interests", async () => {
+        const {status, data } = await getInterests();
+        console.log(data)
+        expect(Array.isArray(data)).toBe(true);
+        expect(status).toBe(200);
+    });
+});
 
-// describe("updateUserInterests / getUserInterests", () => {
-//     skip("saves interest IDs and reads them back", async () => {
-//         const ids = [1, 2, 3];
-//         await updateUserInterests(TEST_UID, ids);
+describe("updateUserInterests / getUserInterests", () => {
+    skip("saves interest IDs and reads them back", async () => {
+        const ids = [1, 2, 3];
+        await updateUserInterests(TEST_UID, ids);
 
-//         const saved = await getUserInterests(TEST_UID);
-//         expect(Array.isArray(saved)).toBe(true);
-//         const savedIds = saved.map((i: { id: number }) => i.id);
-//         expect(savedIds).toEqual(expect.arrayContaining(ids));
-//     });
+        const {data, status} = await getUserInterests(TEST_UID);
+        expect(Array.isArray(data)).toBe(true);
+        const savedIds = data?.map((i: { id: number }) => i.id);
+        expect(savedIds).toEqual(expect.arrayContaining(ids));
+    });
 
-//     skip("replacing interests removes old ones", async () => {
-//         await updateUserInterests(TEST_UID, [1, 2, 3]);
-//         await updateUserInterests(TEST_UID, [7, 8]);
+    skip("replacing interests removes old ones", async () => {
+        await updateUserInterests(TEST_UID, [1, 2, 3]);
+        await updateUserInterests(TEST_UID, [7, 8]);
 
-//         const saved = await getUserInterests(TEST_UID);
-//         const savedIds = saved.map((i: { id: number }) => i.id);
-//         expect(savedIds).toEqual(expect.arrayContaining([7, 8]));
-//         expect(savedIds).not.toContain(1);
-//     });
-// });
+        const saved = await getUserInterests(TEST_UID);
+        const savedIds = saved.map((i: { id: number }) => i.id);
+        expect(savedIds).toEqual(expect.arrayContaining([7, 8]));
+        expect(savedIds).not.toContain(1);
+    });
+});
 
-// // ---------------------------------------------------------------------------
-// // Events
-// // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
 
-// describe("getUserEvents", () => {
-//     skip("returns an array of events for the user", async () => {
-//         const events = await getUserEvents(TEST_UID);
-//         expect(Array.isArray(events)).toBe(true);
-//     });
-// });
+describe("getUserEvents", () => {
+    skip("returns an array of events for the user", async () => {
+        const events = await getUserEvents(TEST_UID);
+        expect(Array.isArray(events)).toBe(true);
+    });
+});
