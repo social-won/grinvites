@@ -1,12 +1,17 @@
-import sqlite3
+import sqlite3, os
+
+from models import User
 #from scraper import scrape_events
 
 #switch to id being input
 
+def get_db() -> sqlite3.Connection:
+    path = os.getenv("DB_PATH", "database.db")
+    return sqlite3.connect(path)
 
 #Adds a user to the database
 def add_user(email, display_name=None, calendar_type=None, prefer_notify=0):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         INSERT OR IGNORE INTO users (email, display_name, calendar_type, prefer_notify)
@@ -16,7 +21,7 @@ def add_user(email, display_name=None, calendar_type=None, prefer_notify=0):
     connection.close()
 
 def get_users():
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM users
@@ -27,7 +32,7 @@ def get_users():
 
 #Gets a user via their email
 def get_user_by_email(email):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM users WHERE email = ?
@@ -37,7 +42,7 @@ def get_user_by_email(email):
     return user
 
 def get_event_by_id(event_id): 
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM events WHERE id = ?
@@ -48,7 +53,7 @@ def get_event_by_id(event_id):
 
 #Updates a user's interests or adds them if non exist.
 def update_user_interests(email, interest_ids):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM users WHERE email = ?
@@ -63,7 +68,7 @@ def update_user_interests(email, interest_ids):
 
 #Gets a user's interests via their email
 def get_user_interests(email):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM users WHERE email = ?
@@ -78,7 +83,7 @@ def get_user_interests(email):
     return user_interests
 
 def add_event(title, start_time, end_time, location, summary = None, categories = None, tags = None, org_name = None, frequency = None):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         INSERT INTO events (creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name, frequency)
@@ -88,7 +93,7 @@ def add_event(title, start_time, end_time, location, summary = None, categories 
     connection.close()
 
 def get_events():
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM events
@@ -99,7 +104,7 @@ def get_events():
 
 #Gets an event via its title
 def get_event_by_title(title):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM events WHERE title = ?
@@ -120,7 +125,7 @@ def get_event_by_time(initial_start_time, final_start_time):
 
 #Updates an event's interests or adds them if non exist.
 def update_event_interests(event_title, interest_ids):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM events WHERE title = ?
@@ -135,7 +140,7 @@ def update_event_interests(event_title, interest_ids):
 
 #Gets an event's interests via its title
 def get_event_interests(event_title):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM events WHERE title = ?
@@ -151,7 +156,7 @@ def get_event_interests(event_title):
 
 #Inserts events from the scraper into the database
 def insert_events_into_db(events):
-    connection = sqlite3.connect("test_grinvites.db")
+    connection = get_db()
     cursor = connection.cursor()
 
     inserted_count = 0
@@ -178,7 +183,7 @@ def insert_events_into_db(events):
     print(f"Inserted {inserted_count} events into the database.")
 
 def get_event_id_by_time(start_time):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM events WHERE start_time = ?
@@ -190,7 +195,7 @@ def get_event_id_by_time(start_time):
 
 #gets all user information for a given event
 def get_users_for_event(event_id):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('SELECT interest_id FROM event_interests WHERE event_id = ?', (event_id,))
     interest_ids = [row[0] for row in cursor.fetchall()]
@@ -209,7 +214,7 @@ def get_users_to_email(event_id):
     user_names = []
     user_emails = []
     for user in users:
-        connection = sqlite3.connect('test_grinvites.db')
+        connection = get_db()
         cursor = connection.cursor()
         cursor.execute('''
             SELECT email FROM users WHERE id = ?

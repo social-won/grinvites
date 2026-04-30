@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from typing import List
 import sqlite3
 
+from db_functions import get_db
+
 class User(BaseModel):
     id: int
     email: str
@@ -55,7 +57,7 @@ app.add_middleware(
 
 @app.post("/users")
 async def create_user(user_data: UserCreate):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO users (email, display_name, calendar_type, prefer_notify)
@@ -90,7 +92,7 @@ async def create_user(user_data: UserCreate):
 # Get user object
 @app.get("/users/{user_id}")
 async def read_user(user_id):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
@@ -108,7 +110,7 @@ async def read_user(user_id):
 # Update user object
 @app.put("/users/{user_id}")
 async def update_user(user_id, user_data: UserCreate):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET email=?, display_name=?, calendar_type=?, prefer_notify=? WHERE id=?", 
                    (user_data.email, user_data.display_name, user_data.calendar_type, user_data.prefer_notify, user_id))
@@ -125,7 +127,7 @@ async def update_user(user_id, user_data: UserCreate):
 # Get user interests
 @app.get("/users/{user_id}/interests")
 async def read_user_interests(user_id):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT interests FROM users WHERE id = ?", (user_id,))
     interests_pulled = cursor.fetchall()
@@ -141,7 +143,7 @@ async def read_user_interests(user_id):
 # Update user interests
 @app.put("/users/{user_id}/interests")
 async def update_user_interests(user_id: int, interests_data: UserInterestsUpdate):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     # Delete existing interests for the user
     #cursor.execute("DELETE FROM user_interests WHERE user_id = ?", (user_id,))
@@ -157,7 +159,7 @@ async def update_user_interests(user_id: int, interests_data: UserInterestsUpdat
 # Get event object
 @app.get("/events/{event_id}")
 async def read_event(event_id):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
     event_info = cursor.fetchall()
