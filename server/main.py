@@ -14,7 +14,8 @@ import asyncio
 
 from api.sql_init import initialize_database
 from models import User, UserInterestsUpdate
-from api.db_functions import add_user, get_db, get_user
+from api.db_functions import *
+from api.scraper import scrape_events
 
 async def my_daemon():
     print("hi!!!")
@@ -28,6 +29,8 @@ async def my_daemon():
 async def lifespan(app: FastAPI):
     if os.getenv("E2E_TESTING"):
         initialize_database()
+        scrape_events()
+        
     task = asyncio.create_task(my_daemon())
     yield
     task.cancel()
@@ -115,6 +118,10 @@ async def set_user_interests(user_id):
     conn.close()
     pass
 
+
+@app.get("/interests")
+async def read_interests():
+    return get_interests()
 
 
 # Get event object

@@ -85,12 +85,11 @@ export const getUserSchedule = async (userId: string): Promise<ApiResponse<{
 
 export const updateUserSchedule = async (
     userId: string,
-    inviteDays: string[],
     inviteTimes: Record<string, string>,
 ): Promise<ApiResponse<null>> => {
     return apiFetch(`/users/${userId}/schedule`, {
         method: "PUT",
-        body: JSON.stringify({ invite_days: inviteDays, invite_times: inviteTimes }),
+        body: JSON.stringify({ invite_times: inviteTimes }),
     });
 };
 

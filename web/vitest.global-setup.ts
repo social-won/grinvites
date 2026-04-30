@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_DIR = resolve(__dirname, "../server");
 const BACKEND_URL = "http://127.0.0.1:8000";
-const READY_TIMEOUT_MS = 15_000;
+const READY_TIMEOUT_MS = 100_000;
 
 let server: ChildProcess | null = null;
 
@@ -37,9 +37,9 @@ export async function setup() {
     server.stderr?.on("data", (d: Buffer) => {
         // Suppress routine uvicorn startup noise; surface actual errors.
         const line = d.toString();
-        if (line.includes("ERROR") || line.includes("Traceback")) {
-            process.stderr.write(`[backend] ${line}`);
-        }
+        // if (line.includes("ERROR") || line.includes("Traceback")) {
+        process.stderr.write(`[backend] ${line}`);
+        // }
     });
 
     server.on("error", (err) => {

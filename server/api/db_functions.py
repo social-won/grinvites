@@ -84,20 +84,41 @@ def update_user_interests(email, interest_ids):
     connection.close()
 
 #Gets a user's interests via their email
-def get_user_interests(email):
-    connection = sqlite3.connect('test_grinvites.db')
+def get_user_interests(user_id):
+    connection = get_db()
     cursor = connection.cursor()
-    cursor.execute('''
-        SELECT id FROM users WHERE email = ?
-    ''', (email,))
-    user_id = cursor.fetchone()[0]
     cursor.execute('''
         SELECT interest_id FROM user_interests WHERE user_id = ?
     ''', (user_id,))
     interest_ids = cursor.fetchall()
     user_interests = [row[0] for row in interest_ids]
+
+    for user_interest in user_interests:
+        cursor.execute('''
+            SELECT * FROM interests WHERE id = ?''', (user_interest))
+    final_interests = cursor.fetchall()
+
+        
+
     connection.close()
-    return user_interests
+    return final_interests
+
+#Get all interests
+def get_interests():
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT * FROM interests
+    ''')
+    interests = cursor.fetchall()
+    if not interests:
+        return
+    
+    column_names = [col[0] for col in cursor.description]
+    interests = [dict(zip(column_names, row)) for row in interests]
+
+    connection.close()
+    return interests
 
 def add_event(title, org_name, description, start_time, end_time, location, frequency):
     connection = sqlite3.connect('test_grinvites.db')

@@ -2,7 +2,8 @@ import requests
 import sqlite3
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
-from sql_init import initialize_database
+from api.sql_init import initialize_database
+from api.db_functions import get_db
 
 # Source: https://realpython.com/beautiful-soup-web-scraper-python/
 # Source: https://scrapfly.io/blog/posts/web-scraping-with-playwright-and-python
@@ -38,10 +39,13 @@ def add_interest(cursor, name, type="organization"):
     if not name:
         return
     name = clean_text(name).lower()
-    cursor.execute('''
-        INSERT OR IGNORE INTO interests (name, type)
-        VALUES (?, ?)
-    ''', (name, type))
+    interests = name.split(", ")
+    for interest in interests:
+        if cursor.execute('''SELECT EXISTS(SELECT 1 FROM interests WHERE name = ?)''', (interest,)):
+            cursor.execute('''
+                INSERT OR IGNORE INTO interests (name, type)
+                VALUES (?, ?)
+                ''', (interest, type))
 
 #gets the id of an interest
 def get_interest_id(cursor, name):
@@ -75,7 +79,7 @@ def get_interest_by_id(interest_id, interests):
 def scrape_events():
     initialize_database()
 
-    connection = sqlite3.connect("test_grinvites.db")
+    connection = get_db()
     cursor = connection.cursor()
 
     cursor.execute("DELETE FROM events")
@@ -229,7 +233,7 @@ def scrape_events():
 
 # Tests if events were successfully inserted into the database by fetching and printing the first 5 events.
 def test_db():
-    connection = sqlite3.connect("test_grinvites.db")
+    connection = get_db()
     cursor = connection.cursor()
 
     cursor.execute('''
