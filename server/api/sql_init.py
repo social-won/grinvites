@@ -5,6 +5,8 @@ def initialize_database():
     connection = sqlite3.connect('test_grinvites.db')
     cursor = connection.cursor()
 
+    cursor.execute("DROP TABLE IF EXISTS users")
+    cursor.execute("DROP TABLE IF EXISTS user_interests")
     cursor.execute("DROP TABLE IF EXISTS events")
     cursor.execute("DROP TABLE IF EXISTS event_interests")
     cursor.execute("DROP TABLE IF EXISTS interests")
@@ -13,12 +15,11 @@ def initialize_database():
     #users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             email TEXT NOT NULL UNIQUE,
-            display_name TEXT,
-            calendar_type TEXT,
-            prefer_notify INTEGER
-    )
+            display_name TEXT NOT NULL,
+            invite_times TEXT
+        )
     ''')
 
     #interests table
