@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 import sqlite3
-from main import app
+from server.main import app
 
 
 

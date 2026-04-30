@@ -1,3 +1,4 @@
+import json
 import sqlite3, os
 
 from models import User
@@ -10,13 +11,13 @@ def get_db() -> sqlite3.Connection:
     return sqlite3.connect(path)
 
 #Adds a user to the database
-def add_user(email, display_name=None, calendar_type=None, prefer_notify=0):
+def add_user(user: User):
     connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
-        INSERT OR IGNORE INTO users (email, display_name, calendar_type, prefer_notify)
+        INSERT INTO users (id, email, display_name, invite_times)
         VALUES (?, ?, ?, ?)
-    ''', (email, display_name, calendar_type, prefer_notify))
+    ''', (user.id, user.email, user.display_name, json.dumps(user.invite_times)))
     connection.commit()
     connection.close()
 
@@ -29,6 +30,25 @@ def get_users():
     users = cursor.fetchall()
     connection.close()
     return users
+
+#Gets a user via their email
+def get_user(user_id: str) -> User | None:
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT * FROM users WHERE id = ?
+    ''', (user_id,))
+    user = cursor.fetchone()
+    connection.close()
+
+    if not user:
+        return None
+
+    column_names = [col[0] for col in cursor.description]
+    user_dict = dict(zip(column_names, user))
+    user_dict["invite_times"] = json.loads(user_dict["invite_times"] or "{}")
+
+    return User(**user_dict)
 
 #Gets a user via their email
 def get_user_by_email(email):
