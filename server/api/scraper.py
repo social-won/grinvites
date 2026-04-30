@@ -38,13 +38,10 @@ def add_interest(cursor, name, type="organization"):
     if not name:
         return
     name = clean_text(name).lower()
-    interests = name.split(",")
-    for interest in interests:
-        if cursor.execute('''SELECT EXISTS(SELECT 1 FROM interests WHERE name = ?)''', (interest,)):
-            cursor.execute('''
-                INSERT OR IGNORE INTO interests (name, type)
-                VALUES (?, ?)
-                ''', (interest, type))
+    cursor.execute('''
+        INSERT OR IGNORE INTO interests (name, type)
+        VALUES (?, ?)
+    ''', (name, type))
 
 #gets the id of an interest
 def get_interest_id(cursor, name):
@@ -277,11 +274,11 @@ def test_db():
         print("Interest Name:", interest[1])
         print()
     
-    # for event_interest in event_interests:
-    #     print("Event ID:", event_interest[0])
-    #     print("Interest ID:", event_interest[1])
-    #     print("Interest Name:", get_interest_by_id(event_interest[1], interests))
-    #     print()
+    for event_interest in event_interests:
+        print("Event ID:", event_interest[0])
+        print("Interest ID:", event_interest[1])
+        print("Interest Name:", get_interest_by_id(event_interest[1], interests))
+        print()
         
 
 # run manually for testing

@@ -28,14 +28,6 @@ class Event(BaseModel):
     location: str
     interests: str
 
-class Interests(BaseModel):
-    id: int
-    name: str
-    type: str
-
-class UserInterestsUpdate(BaseModel):
-    interest_ids: List[int]
-
 
 # Written following https://fastapi.tiangolo.com/tutorial/
 app = FastAPI()
@@ -139,18 +131,13 @@ async def read_user_interests(user_id):
     return interests
 
 # Update user interests
-@app.put("/users/{user_id}/interests")
-async def update_user_interests(user_id: int, interests_data: UserInterestsUpdate):
+@app.put("/user/{user_id}/interests")
+async def set_user_interests(user_id):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    # Delete existing interests for the user
-    #cursor.execute("DELETE FROM user_interests WHERE user_id = ?", (user_id,))
-    # Insert new interests
-    for interest_id in interests_data.interest_ids:
-        cursor.execute("INSERT INTO user_interests (user_id, interest_id) VALUES (?, ?)", (user_id, interest_id))
-    conn.commit()
+    cursor.execute("INSERT INTO interests (id) VALUES (?)", (user_id,))
     conn.close()
-    return {"message": "User interests updated successfully"}
+    pass
 
 
 
