@@ -21,16 +21,6 @@ import { useUser } from "@/context/user-context";
 import { classesData, hoursData } from "@/lib/api";
 import { InviteScheduleForm, DAYS_OF_WEEK, formatScheduleTime } from "./invite-schedule-form";
 
-const DAYS_OF_WEEK = [
-  { day: "Monday", short: "Mon", letter: "M" },
-  { day: "Tuesday", short: "Tue", letter: "T" },
-  { day: "Wednesday", short: "Wed", letter: "W" },
-  { day: "Thursday", short: "Thu", letter: "Th" },
-  { day: "Friday", short: "Fri", letter: "F" },
-  { day: "Saturday", short: "Sat", letter: "S" },
-  { day: "Sunday", short: "Sun", letter: "Su" },
-];
-
 const steps = [
   // {
   //   id: 0,
