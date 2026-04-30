@@ -6,9 +6,12 @@ from models import User
 
 #switch to id being input
 
+def get_db() -> sqlite3.Connection:
+    path = os.getenv("DB_PATH", "database.db")
+    return sqlite3.connect(path)
 
 #Adds a user to the database
-def add_user(user: User):
+def add_user(email, display_name=None, calendar_type=None, prefer_notify=0):
     connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
@@ -19,7 +22,7 @@ def add_user(user: User):
     connection.close()
 
 def get_users():
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM users
@@ -49,7 +52,7 @@ def get_user(user_id: str) -> User | None:
 
 #Gets a user via their email
 def get_user_by_email(email):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM users WHERE email = ?
@@ -59,7 +62,7 @@ def get_user_by_email(email):
     return user
 
 def get_event_by_id(event_id): 
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM events WHERE id = ?
@@ -70,7 +73,7 @@ def get_event_by_id(event_id):
 
 #Updates a user's interests or adds them if non exist.
 def update_user_interests(email, interest_ids):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM users WHERE email = ?
@@ -131,7 +134,7 @@ def add_event(title, org_name, description, start_time, end_time, location, freq
     connection.close()
 
 def get_events():
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM events
@@ -142,7 +145,7 @@ def get_events():
 
 #Gets an event via its title
 def get_event_by_title(title):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT * FROM events WHERE title = ?
@@ -153,7 +156,7 @@ def get_event_by_title(title):
 
 #Updates an event's interests or adds them if non exist.
 def update_event_interests(event_title, interest_ids):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM events WHERE title = ?
@@ -168,7 +171,7 @@ def update_event_interests(event_title, interest_ids):
 
 #Gets an event's interests via its title
 def get_event_interests(event_title):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM events WHERE title = ?
@@ -184,7 +187,7 @@ def get_event_interests(event_title):
 
 #Inserts events from the scraper into the database
 def insert_events_into_db(events):
-    connection = sqlite3.connect("test_grinvites.db")
+    connection = get_db()
     cursor = connection.cursor()
 
     inserted_count = 0
@@ -211,7 +214,7 @@ def insert_events_into_db(events):
     print(f"Inserted {inserted_count} events into the database.")
 
 def get_event_id_by_time(start_time):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT id FROM events WHERE start_time = ?
@@ -223,7 +226,7 @@ def get_event_id_by_time(start_time):
 
 #gets all user information for a given event
 def get_users_for_event(event_id):
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
         SELECT user_id FROM event_users WHERE event_id = ?
@@ -239,7 +242,7 @@ def get_users_to_email(event_id):
     user_names = []
     user_emails = []
     for user in users:
-        connection = sqlite3.connect('test_grinvites.db')
+        connection = get_db()
         cursor = connection.cursor()
         cursor.execute('''
             SELECT email FROM users WHERE id = ?

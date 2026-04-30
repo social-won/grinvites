@@ -1,8 +1,8 @@
-import sqlite3
+from api.db_functions import get_db
 
 def initialize_database():
     #connect to the database (or create it if it doesn't exist)
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
 
     cursor.execute("DROP TABLE IF EXISTS users")
