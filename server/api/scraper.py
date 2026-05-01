@@ -19,11 +19,11 @@ from models import Organization
 
 JSON_URL = "https://events.grinnell.edu/live/json/events/response_fields/all/paginate"
 
-with open('api/organizations_clean.json', 'r') as file:
+with open('api/interests.json', 'r') as file:
     data = json.load(file)
     data = [Organization(**item) for item in data]
-    ORGS = {item.name: item for item in data}
-    ORGS_COMMA = [item for item in data if item.has_comma]
+    INTERESTS = {item.name: item for item in data}
+    INTERESTS_COMMA = [item for item in data if item.has_comma]
 
 
 # Helper function to clean text by removing extra whitespace
@@ -54,25 +54,25 @@ def sanitize_name(s: str) -> str:
     return s.lower().strip()
 
 #adds interest to interest table
-def add_interest(cursor, name, interest_type="organization"):
-    if not name:
-        return
-    name = sanitize_name(clean_html(name))
-    interests = name.split(", ")
-    # corrects for potential incorrect splitting of name by adding in any org with a comma in their name
-    if "," in name:
-        interests.extend(org.name for org in ORGS_COMMA if org.name in name)
+# def add_interest(cursor, name, interest_type="organization"):
+#     if not name:
+#         return
+#     name = sanitize_name(clean_html(name))
+#     interests = name.split(", ")
+#     # corrects for potential incorrect splitting of name by adding in any org with a comma in their name
+#     if "," in name:
+#         interests.extend(org.name for org in ORGS_COMMA if org.name in name)
 
-    for interest in interests:
-        try:
-            item = ORGS[interest]
-        # if cursor.execute('''SELECT EXISTS(SELECT 1 FROM interests WHERE name = ?)''', (interest,)):
-            cursor.execute('''
-            INSERT OR IGNORE INTO interests (name, formatted_name, type, groups)
-            VALUES (?, ?, ?, ?)
-            ''', (item.name, item.formatted_name, interest_type, json.dumps(item.groups)))
-        except KeyError:
-            print(interest, "not found")
+#     for interest in interests:
+#         try:
+#             item = ORGS[interest]
+#         # if cursor.execute('''SELECT EXISTS(SELECT 1 FROM interests WHERE name = ?)''', (interest,)):
+#             cursor.execute('''
+#             INSERT OR IGNORE INTO interests (name, formatted_name, type, groups)
+#             VALUES (?, ?, ?, ?)
+#             ''', (item.name, item.formatted_name, interest_type, json.dumps(item.groups)))
+#         except KeyError:
+#             print(interest, "not found")
 
 #gets the id of an interest
 def get_interest_id(cursor, name):
@@ -113,7 +113,7 @@ def scrape_events():
     # Temporarily disable FK constraints for initialization
     cursor.execute("PRAGMA foreign_keys = OFF")
     cursor.execute("DELETE FROM events")
-    cursor.execute("DELETE FROM interests")
+    # cursor.execute("DELETE FROM interests")
     cursor.execute("DELETE FROM event_interests")
     cursor.execute("PRAGMA foreign_keys = ON")
 
@@ -218,8 +218,15 @@ def scrape_events():
             event_id = cursor.lastrowid
 
             if org_name:
-                add_interest(cursor, org_name)
-                add_event_interest(cursor, org_name, event_id)
+                # add_interest(cursor, org_name)
+                org_name = sanitize_name(clean_html(org_name))
+                interests = org_name.split(", ")
+                # corrects for potential incorrect splitting of name by adding in any org with a comma in their name
+                if "," in org_name:
+                    interests.extend(interest.name for interest in INTERESTS_COMMA if interest.name in org_name)
+
+                for interest in interests:
+                    add_event_interest(cursor, interest, event_id)
             
             inserted_count += 1
         

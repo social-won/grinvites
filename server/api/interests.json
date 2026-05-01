@@ -11,7 +11,7 @@
   {
     "name": "aassn",
     "original_name": "AASSN",
-    "formatted_name": "Aassn",
+    "formatted_name": "AASSN",
     "groups": [
       "Registered Student Organizations",
       "Affinity & Multicultural Organizations"
@@ -90,7 +90,7 @@
   {
     "name": "aerolearn",
     "original_name": "AeroLearn",
-    "formatted_name": "Aerolearn",
+    "formatted_name": "AeroLearn",
     "groups": [
       "Registered Student Organizations"
     ],
@@ -190,7 +190,7 @@
   {
     "name": "american red cross ia rivers",
     "original_name": "AMERICAN RED CROSS IA RIVERS",
-    "formatted_name": "American Red Cross Ia Rivers",
+    "formatted_name": "American Red Cross IA Rivers",
     "groups": [],
     "has_comma": false
   },
@@ -4230,7 +4230,7 @@
     "has_comma": false
   },
   {
-    "name": "zzwomen & gender minorities in math club",
+    "name": "zzzwomen & gender minorities in math club",
     "original_name": "zzWomen & Gender Minorities in Math Club",
     "formatted_name": "Zzwomen & Gender Minorities In Math Club",
     "groups": [],

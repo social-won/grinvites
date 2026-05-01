@@ -16,6 +16,7 @@ from api.sql_init import initialize_database
 from models import User, UserInterestsUpdate, UserUpdate
 from api.db_functions import *
 from api.scraper import scrape_events, test_scraping
+from api.interests import populate_interests
 
 
 async def my_daemon():
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
     if os.getenv("E2E_TESTING"):
         print("Initializing database")
         initialize_database()
+        populate_interests()
         scrape_events()
         # test_scraping()
 
@@ -41,7 +43,9 @@ async def lifespan(app: FastAPI):
     task.cancel()
 
 if os.getenv("RESET_USERS"):
+    print("Reseting users")
     initialize_database()
+    populate_interests()
     scrape_events()
 elif os.getenv("RESET_EVENTS"):
     scrape_events()
