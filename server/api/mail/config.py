@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import computed_field
 from pathlib import Path
 
 file_path = Path(__file__).resolve().parent
@@ -15,5 +16,15 @@ class Config(BaseSettings):
     bulk_mail_smtp_url : str
     individual_mail_smtp_url : str
     default_smtp_port : int
+
+    grinvites_prod_id : list[str]
+    grinvites_mail_address : str
+
+    @computed_field
+    @property
+    def grinvites_mail_address_rfc5322(self) -> str:
+        return f'Grinvites <{self.grinvites_mail_address}>'
+
+    grinnell_college_address : str
 
     model_config = SettingsConfigDict(env_file=f'{Path(file_path).joinpath('.env')}')

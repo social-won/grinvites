@@ -1,7 +1,9 @@
 from icalendar import Event, CLASS, STATUS, TRANSP, vRecur, vCalAddress
 from icalendar.error import InvalidCalendar
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Sequence
+from lorem_text import lorem
+from config import Config
 import uuid
 
 
@@ -12,49 +14,8 @@ class RequestEvent(Event):
         Event (Event): A grouping of component properties that describe an event.
     """
 
-    def __init__(
-        self,
-        uid: str | uuid.UUID | None = None,
-        summary: str | None = None,
-        description: str | None = None,
-        start: date | datetime | None = None,
-        location: str | None = None,
-        organizer: vCalAddress | str | None = None,
-        categories: Sequence[str] = (),
-        status: STATUS | None = None,
-        priority: int | None = None,
-        last_modified: date | None = None,
-        comments: list[str] | str | None = None,
-        attendees: list[vCalAddress] | None = None,
-        classification: CLASS | None = None,
-        stamp: date | None = None,
-        created: date | None = None,
-        sequence: int | None = None,
-        transparency: TRANSP | None = None,
-    ):
-
-        return super().new(
-            uid=uid,
-            summary=summary,
-            description=description,
-            start=start,
-            location=location,
-            organizer=organizer,
-            categories=categories,
-            status=status,
-            priority=priority,
-            last_modified=last_modified,
-            comments=comments,
-            attendees=attendees,
-            classification=classification,
-            stamp=stamp,
-            created=created,
-            sequence=sequence,
-            transparency=transparency,
-        )
-
     @classmethod
-    def GrinvitesEvent(
+    def grinvites_event(
         cls,
         uid: str | uuid.UUID,
         summary: str,
@@ -65,6 +26,7 @@ class RequestEvent(Event):
         organizer: vCalAddress,
         status: STATUS,
         priority: int,
+        stamp: date,
         attendees: list[vCalAddress],
         classification: CLASS = CLASS.PUBLIC,
         categories: Sequence[str] = (),
@@ -75,13 +37,13 @@ class RequestEvent(Event):
         ) = None,
         last_modified: date | None = None,
         comments: list[str] | str | None = None,
-        stamp: date | None = None,
         created: date | None = None,
         sequence: int | None = None,
         transparency: TRANSP = TRANSP.OPAQUE,
     ):
-        event = RequestEvent(
+        event = super(RequestEvent, cls).new(
             uid=uid,
+            stamp=stamp,
             summary=summary,
             description=description,
             location=location,
@@ -93,7 +55,6 @@ class RequestEvent(Event):
             comments=comments,
             attendees=attendees,
             classification=classification,
-            stamp=stamp,
             created=created,
             sequence=sequence,
             transparency=transparency,
@@ -103,30 +64,33 @@ class RequestEvent(Event):
         event.set_duration(duration=duration)
 
         # RDATE: Type checking for list[tuple(a, b)]
-        if isinstance(recurrence, list) and all(
-            isinstance(x, tuple) and len(x) == 2 for x in recurrence
-        ):
-
-            #  Type checking for either list[tuple[datetime, None]], list[tuple[date, None]], or list[tuple[datetime, datetime]]
-            if (
-                all(isinstance(x[0], date) and x[1] == None for x in recurrence)
-                or all(isinstance(x[0], datetime) and x[1] == None for x in recurrence)
-                or all(
-                    isinstance(x[0], datetime) and isinstance(x[1], datetime)
-                    for x in recurrence
-                )
+        if recurrence is not None:
+            if isinstance(recurrence, list) and all(
+                isinstance(x, tuple) and len(x) == 2 for x in recurrence
             ):
-                event.add("RDATE", recurrence)
-            else:
-                raise InvalidCalendar(f"The provided RDATE is invalid.")
 
-        #  RRULE: Type checking for list[vRecur]
-        elif isinstance(recurrence, list) and all(
-            isinstance(x, vRecur) for x in recurrence
-        ):
-            event.add("RRULE", recurrence)
-        else:
-            raise InvalidCalendar(f"The provided RRULE is invalid.")
+                #  Type checking for either list[tuple[datetime, None]], list[tuple[date, None]], or list[tuple[datetime, datetime]]
+                if (
+                    all(isinstance(x[0], date) and x[1] == None for x in recurrence)
+                    or all(
+                        isinstance(x[0], datetime) and x[1] == None for x in recurrence
+                    )
+                    or all(
+                        isinstance(x[0], datetime) and isinstance(x[1], datetime)
+                        for x in recurrence
+                    )
+                ):
+                    event.add("RDATE", recurrence)
+                else:
+                    raise InvalidCalendar(f"The provided RDATE is invalid.")
+
+            #  RRULE: Type checking for list[vRecur]
+            elif isinstance(recurrence, list) and all(
+                isinstance(x, vRecur) for x in recurrence
+            ):
+                event.add("RRULE", recurrence)
+            else:
+                raise InvalidCalendar(f"The provided RRULE is invalid.")
 
         return event
 
@@ -137,8 +101,28 @@ class RequestEvent(Event):
         attendees: list[vCalAddress] | None = None,
     ):
 
-        event = super().example(name = name)
+        event = super().example(name=name)
 
         if attendees:
             event.attendees = attendees
         return event
+
+    @staticmethod
+    def test1_grinvites_event(attendees: list[vCalAddress]):
+
+        return RequestEvent.grinvites_event(
+            uid=uuid.uuid4(),
+            stamp=datetime.now(timezone.utc),
+            summary=f'Grinvites Test Test Event {datetime.now(timezone.utc).strftime("%B %d, %Y %H:%M:%S")}',
+            description=lorem.sentence(),
+            start=datetime.now(timezone.utc),
+            duration=timedelta(hours=1),
+            location=Config().grinnell_college_address,
+            organizer=vCalAddress(Config().grinvites_mail_address),
+            status=STATUS.CONFIRMED,
+            priority=0,
+            attendees=attendees,
+            classification=CLASS.PUBLIC,
+            sequence=0,
+            transparency=TRANSP.OPAQUE,
+        )
