@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -20,11 +20,21 @@ import { Controller, useForm, UseFormReturn } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import supabase from "@/lib/supabase"
 
-import { SignupFormValues, signupSchema } from "@/lib/utils"
+import { signupSchema } from "@/lib/utils"
 import { createUser } from "@/lib/api"
+import { SignupFormValues } from "@/lib/types"
+import { useUser } from "@/context/user-context"
 
 export function SignupPage() {
   const navigate = useNavigate()
+  const { user, setUser } = useUser()
+  const justSignedUp = useRef(false)
+
+  useEffect(() => {
+    if (user && !justSignedUp.current) {
+      navigate("/home");
+    }
+  }, [user])
 
   const [page, setPage] = useState(0);
 
@@ -42,7 +52,8 @@ export function SignupPage() {
   const onSubmit = async (values: SignupFormValues) => {
     form.clearErrors()
 
-    const { data, error } = await supabase.auth.signUp({
+    // SUPABASE AUTH sign up   NOT CC
+    supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
@@ -50,27 +61,46 @@ export function SignupPage() {
           display_name: values.name,
         },
       },
-    })
+    }).then(({ data }) => {
 
-    if (error) {
+      if (data.user) {
+        const newUser = {
+          id: data.user.id,
+          email: data.user.email!!,
+          display_name: data.user.user_metadata.display_name,
+          invite_times: {},
+          theme: "light"
+        }
+        // if user is created, make BACKEND API call
+        createUser(newUser).then((({ status }) => {
+          console.log("user created", status);
+
+          if (status == 201) {
+            justSignedUp.current = true
+            setUser(newUser)
+            navigate("/onboarding")
+          } else {
+            console.error("status: ", status)
+            form.setError("password", {
+              type: "server",
+              message: "Unable to create user error code: " + status.toString()
+            })
+            //TODO: Delete user from supabase?
+          }
+        }))
+      }
+    }).catch(error => {
       console.error(error)
       form.setError("password", {
         type: "server",
-        message: error.message || "Unable to sign up",
+        message: error.message || "Unable to register user",
       })
-      return
-    }
-
-    if (data.user) {
-      createUser(data.user)
-
-      navigate("/onboarding")
-    }
+    })
   }
 
   return (
     <div className="flex min-h-screen flex-col gap-6 p-4 items-center justify-center">
-      <Card className={page === 1 ? "w-full max-w-xl": "w-full max-w-sm"}>
+      <Card className="w-full max-w-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">{page == 1 ? "Create your account" : "Connect your email to Grinvites"}</CardTitle>
           <CardDescription>
@@ -92,11 +122,6 @@ export function SignupPage() {
 
 export function SignupForm({ form, onSubmit }: { form: UseFormReturn<SignupFormValues>, onSubmit: (values: SignupFormValues) => Promise<void> }) {
 
-  // return (
-  //   <>
-  //   hi
-  //   </>
-  // )
   return (
     <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
       <FieldGroup className="gap-4 max-w-xl w-full">
@@ -196,17 +221,16 @@ export function SignupForm({ form, onSubmit }: { form: UseFormReturn<SignupFormV
   )
 }
 
-function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues> }) {
-
+function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues>, setPage: React.Dispatch<React.SetStateAction<number>> }) {
 
   return (
-    <form noValidate onSubmit={() => console.log(form)}>
+    <form noValidate onSubmit={() => console.log(form)} className="w-full">
       <FieldGroup className="flex justify-center items-center gap-4" >
         <Controller
           name="email"
           control={form.control}
           render={({ field, fieldState }) => (
-            <Field className="max-w-3xs w-full">
+            <Field className="w-full">
               {/* <FieldLabel htmlFor="email">Email</FieldLabel> */}
               <Input
                 {...field}
@@ -222,18 +246,18 @@ function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues> })
           )}
         />
 
-          <Button 
-            className="w-full max-w-3xs"
-            onClick={async (_e) => {
+        <Button
+          className="w-full"
+          onClick={async (_e) => {
             _e.preventDefault();
             const isValid = await form.trigger("email");
             if (isValid) {
               setPage(1);
             }
           }}>Next</Button>
-          <FieldDescription className="text-center">
-            Already have an account? <Link to="/login" className="text-primary hover:underline">Sign in</Link>
-          </FieldDescription>
+        <FieldDescription className="text-center">
+          Already have an account? <Link to="/login" className="text-primary hover:underline">Sign in</Link>
+        </FieldDescription>
       </FieldGroup>
     </form>
   )

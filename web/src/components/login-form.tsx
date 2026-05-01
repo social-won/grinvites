@@ -17,15 +17,23 @@ import { Input } from "@/components/ui/input"
 import { Link, useNavigate } from "react-router-dom"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { getUser } from "@/lib/api"
 import { useUser } from "@/context/user-context"
 import supabase from "@/lib/supabase"
 
-import { LoginFormValues, loginSchema } from "@/lib/utils"
+import { loginSchema } from "@/lib/utils"
+import { LoginFormValues } from "@/lib/types"
+import { useEffect } from "react"
 
 export function LoginForm() {
   const navigate = useNavigate()
-  const { setUser } = useUser()
+  const {user} = useUser()
+
+  useEffect(() => {
+    if (user) {
+      navigate("/home");
+    }
+  }, [user])
+  
 
   const form = useForm<LoginFormValues>({
     defaultValues: {
@@ -44,9 +52,7 @@ export function LoginForm() {
       password: values.password,
     })
 
-    const supabaseUser = data.user
-
-    if (error || !supabaseUser) {
+    if (error || !data.user) {
       console.error(error)
       form.setError("password", {
         type: "server",
@@ -55,19 +61,6 @@ export function LoginForm() {
       return
     }
 
-    let apiUser = null
-    try {
-      apiUser = await getUser(data.user.id)
-    } catch (fetchError) {
-      console.error("Failed to load backend user data", fetchError)
-    }
-
-    const mergedUser = {
-      ...apiUser,
-      ...supabaseUser,
-    }
-
-    setUser(mergedUser)
     navigate("/home")
   }
 

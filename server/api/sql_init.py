@@ -1,10 +1,18 @@
-import sqlite3
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one level
+
+from api.db_functions import get_db
 
 def initialize_database():
     #connect to the database (or create it if it doesn't exist)
-    connection = sqlite3.connect('test_grinvites.db')
+    connection = get_db()
     cursor = connection.cursor()
+    
+    # Temporarily disable FK constraints for initialization
+    cursor.execute("PRAGMA foreign_keys = OFF")
 
+    cursor.execute("DROP TABLE IF EXISTS users")
+    cursor.execute("DROP TABLE IF EXISTS user_interests")
     cursor.execute("DROP TABLE IF EXISTS events")
     cursor.execute("DROP TABLE IF EXISTS event_interests")
     cursor.execute("DROP TABLE IF EXISTS interests")
@@ -13,12 +21,12 @@ def initialize_database():
     #users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             email TEXT NOT NULL UNIQUE,
-            display_name TEXT,
-            calendar_type TEXT,
-            prefer_notify INTEGER
-    )
+            display_name TEXT NOT NULL,
+            invite_times TEXT,
+            theme TEXT
+        )
     ''')
 
     #interests table
@@ -26,7 +34,9 @@ def initialize_database():
         CREATE TABLE IF NOT EXISTS interests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            type TEXT
+            formatted_name TEXT NOT NULL,
+            type TEXT,
+            groups TEXT
     )         
     ''')
 
@@ -70,6 +80,11 @@ def initialize_database():
     ''')
 
     #commits the changes and closes the connection
+    # Re-enable FK constraints before closing
+    cursor.execute("PRAGMA foreign_keys = ON")
     connection.commit()
     connection.close()
     #print("Database initialized successfully.")
+
+if __name__ == "__main__":
+    initialize_database()
