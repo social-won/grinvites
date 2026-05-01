@@ -159,7 +159,7 @@ describe("getInterests", () => {
 
 describe("updateUserInterests / getUserInterests", () => {
     skip("saves interest IDs and reads them back", async () => {
-        const ids = [1, 2, 3];
+        const ids = [1, 2, 4];
         await updateUserInterests(TEST_UID, ids);
 
         const {data, status} = await getUserInterests(TEST_UID);
@@ -169,11 +169,12 @@ describe("updateUserInterests / getUserInterests", () => {
     });
 
     skip("replacing interests removes old ones", async () => {
-        await updateUserInterests(TEST_UID, [1, 2, 3]);
+        await updateUserInterests(TEST_UID, [1, 2, 4]);
         await updateUserInterests(TEST_UID, [7, 8]);
 
-        const saved = await getUserInterests(TEST_UID);
-        const savedIds = saved.map((i: { id: number }) => i.id);
+        const {data} = await getUserInterests(TEST_UID);
+        expect(Array.isArray(data)).toBe(true);
+        const savedIds = data?.map((i: { id: number }) => i.id);
         expect(savedIds).toEqual(expect.arrayContaining([7, 8]));
         expect(savedIds).not.toContain(1);
     });
@@ -185,7 +186,7 @@ describe("updateUserInterests / getUserInterests", () => {
 
 describe("getUserEvents", () => {
     skip("returns an array of events for the user", async () => {
-        const events = await getUserEvents(TEST_UID);
-        expect(Array.isArray(events)).toBe(true);
+        const {data, status} = await getUserEvents(TEST_UID);
+        expect(Array.isArray(data)).toBe(true);
     });
 });

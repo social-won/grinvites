@@ -1,9 +1,15 @@
 from api.db_functions import get_db
+import sqlite3
+import os
 
 def initialize_database():
     #connect to the database (or create it if it doesn't exist)
-    connection = get_db()
+    path = os.getenv("DB_PATH", "database.db")
+    connection = sqlite3.connect(path)
     cursor = connection.cursor()
+    
+    # Temporarily disable FK constraints for initialization
+    cursor.execute("PRAGMA foreign_keys = OFF")
 
     cursor.execute("DROP TABLE IF EXISTS users")
     cursor.execute("DROP TABLE IF EXISTS user_interests")
@@ -71,6 +77,8 @@ def initialize_database():
     ''')
 
     #commits the changes and closes the connection
+    # Re-enable FK constraints before closing
+    cursor.execute("PRAGMA foreign_keys = ON")
     connection.commit()
     connection.close()
     #print("Database initialized successfully.")

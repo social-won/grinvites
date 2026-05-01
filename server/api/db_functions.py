@@ -8,7 +8,10 @@ from models import User
 
 def get_db() -> sqlite3.Connection:
     path = os.getenv("DB_PATH", "database.db")
-    return sqlite3.connect(path)
+    conn = sqlite3.connect(path)
+    # Enable foreign key constraints
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 #Adds a user to the database
 def add_user(user: User):
@@ -86,25 +89,18 @@ def update_user_interests(email, interest_ids):
     connection.commit()
     connection.close()
 
-#Gets a user's interests via their email
+#Gets a user's interests via their user_id
 def get_user_interests(user_id):
     connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
-        SELECT interest_id FROM user_interests WHERE user_id = ?
+        SELECT i.* FROM interests i
+        INNER JOIN user_interests ui ON i.id = ui.interest_id
+        WHERE ui.user_id = ?
     ''', (user_id,))
-    interest_ids = cursor.fetchall()
-    user_interests = [row[0] for row in interest_ids]
-
-    for user_interest in user_interests:
-        cursor.execute('''
-            SELECT * FROM interests WHERE id = ?''', (user_interest))
-    final_interests = cursor.fetchall()
-
-        
-
+    interests = cursor.fetchall()
     connection.close()
-    return final_interests
+    return interests
 
 #Get all interests
 def get_interests():

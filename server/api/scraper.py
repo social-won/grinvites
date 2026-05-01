@@ -39,12 +39,6 @@ def add_interest(cursor, name, type="organization"):
     if not name:
         return
     name = clean_text(name).lower()
-<<<<<<< HEAD
-    cursor.execute('''
-        INSERT OR IGNORE INTO interests (name, type)
-        VALUES (?, ?)
-    ''', (name, type))
-=======
     interests = name.split(", ")
     for interest in interests:
         if cursor.execute('''SELECT EXISTS(SELECT 1 FROM interests WHERE name = ?)''', (interest,)):
@@ -52,7 +46,6 @@ def add_interest(cursor, name, type="organization"):
                 INSERT OR IGNORE INTO interests (name, type)
                 VALUES (?, ?)
                 ''', (interest, type))
->>>>>>> eb1df5303221154dde77a2937b80e3b43c08dbe0
 
 #gets the id of an interest
 def get_interest_id(cursor, name):
