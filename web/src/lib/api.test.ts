@@ -94,7 +94,8 @@ describe("createUser / getUser", () => {
             id: TEST_UID,
             email: `${RUN_ID}@grinnell.edu`,
             display_name: "Test Squirrel",
-            invite_times: {}
+            invite_times: {},
+            theme: "light"
         };
 
         const created = await createUser(user);
@@ -199,7 +200,7 @@ describe("updateUserInterests / getUserInterests", () => {
 
 describe("getUserEvents", () => {
     skip("returns an array of events for the user", async () => {
-        const {data, status} = await getUserEvents(TEST_UID);
+        const {data} = await getUserEvents(TEST_UID);
         expect(Array.isArray(data)).toBe(true);
     });
 });

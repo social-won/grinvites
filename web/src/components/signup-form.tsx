@@ -68,7 +68,8 @@ export function SignupPage() {
           id: data.user.id,
           email: data.user.email!!,
           display_name: data.user.user_metadata.display_name,
-          invite_times: {}
+          invite_times: {},
+          theme: "light"
         }).then((({ status }) => {
           if (status == 201) {
             // if the creation of the user is successful

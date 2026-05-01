@@ -11,6 +11,7 @@ export type GrinvitesUser = {
     email: string;
     display_name: string;
     invite_times: Record<string, string>;
+    theme: string | null;
 };
 
 export const GROUPS = [

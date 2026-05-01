@@ -163,7 +163,7 @@ export default function OnboardingFlow() {
               />
               <Button
                 variant="outline"
-                size="sm"
+                // size="sm"
                 className="shrink-0"
                 onClick={() => {
                   const allGroupNames = GROUPS.filter(g => interestsForGroup(g, interestsArray).length > 0);
@@ -177,7 +177,7 @@ export default function OnboardingFlow() {
               </Button>
             </div>
 
-            <div className="border rounded-lg max-h-80 overflow-y-auto">
+            <div className="border rounded-lg max-h-60 overflow-y-auto">
               {flatFiltered ? (
                 flatFiltered.length > 0 ? (
                   flatFiltered.map((interest) => (
@@ -193,9 +193,9 @@ export default function OnboardingFlow() {
                       />
                       <div className="flex-1 min-w-0">
                         <span className="text-sm">{interest.formatted_name}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">
+                        {/* <span className="ml-2 text-xs text-muted-foreground">
                           {interest.groups?.join(", ")}
-                        </span>
+                        </span> */}
                       </div>
                     </div>
                   ))
@@ -424,7 +424,7 @@ export default function OnboardingFlow() {
           {renderStepContent()}
 
           {currentStep < 3 && (
-            <div className="mt-8 flex items-center justify-between border-t pt-6">
+            <div className="mt-4 flex items-center justify-between border-t pt-6">
               <Button variant="outline" onClick={handlePrevious} disabled={!currentStep}>
                 <ChevronLeft className="h-4 w-4" />
                 <span>Back</span>

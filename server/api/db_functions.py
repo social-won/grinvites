@@ -19,9 +19,9 @@ def add_user(user: User):
     connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
-        INSERT INTO users (id, email, display_name, invite_times)
-        VALUES (?, ?, ?, ?)
-    ''', (user.id, user.email, user.display_name, json.dumps(user.invite_times)))
+        INSERT INTO users (id, email, display_name, invite_times, theme)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (user.id, user.email, user.display_name, json.dumps(user.invite_times), user.theme))
     connection.commit()
     connection.close()
 

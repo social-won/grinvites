@@ -6,6 +6,7 @@ class User(BaseModel):
       email: str
       display_name: str
       invite_times: dict[str, str] = {}  # {"Mon": "08:00", "Tues": "12:00"}
+      theme: str | None = None         # "light" | "dark" | "system"
 
 
 class Interest(BaseModel):
@@ -48,3 +49,4 @@ class UserUpdate(BaseModel):
     email: str | None = None
     display_name: str | None = None
     invite_times: dict[str, str] | None = None
+    theme: str | None = None

@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import { Pencil, Plus, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -19,10 +19,13 @@ import {
   getUserSchedule,
   updateUserInterests,
   updateUserSchedule,
+  updateUserTheme,
 } from '@/lib/api'
 import { Interest, GROUPS, GroupName } from '@/lib/types'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Sun, Moon, Monitor } from 'lucide-react'
 import { Checkbox } from '../ui/checkbox'
+import { useTheme, Theme } from '@/context/theme-context'
+import { cn } from '@/lib/utils'
 
 function InterestRow({ interest, selected, onToggle, indent = false }: { interest: Interest; selected: boolean; onToggle: (id: number) => void; indent?: boolean }) {
   return (
@@ -38,6 +41,7 @@ function InterestRow({ interest, selected, onToggle, indent = false }: { interes
 
 const PreferencesTab: FC = () => {
   const { user } = useUser()
+  const { theme, setTheme } = useTheme()
 
   const [emailOpen, setEmailOpen] = useState(false)
   const [calendarEmail, setCalendarEmail] = useState(user?.email ?? '')
@@ -391,6 +395,38 @@ const PreferencesTab: FC = () => {
             </div>
           </div>
         )}
+      </section>
+
+      <div className="border-t" />
+
+      {/* Theme */}
+      <section className="space-y-3">
+        <h3 className="text-base font-semibold">Theme</h3>
+        <div className="flex gap-2">
+          {([
+            { value: 'light', label: 'Light', icon: Sun },
+            { value: 'system', label: 'System', icon: Monitor },
+            { value: 'dark', label: 'Dark', icon: Moon },
+          ] as { value: Theme; label: string; icon: React.FC<{ className?: string }> }[]).map(({ value: t, label, icon: Icon }) => (
+            <button
+              key={t}
+              type="button"
+              onClick={async () => {
+                setTheme(t)
+                if (user) await updateUserTheme(user.id, t)
+              }}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-1.5 rounded-md border py-2 text-sm font-medium transition-colors',
+                theme === t
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-foreground border-input hover:bg-accent'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
+        </div>
       </section>
 
     </div>

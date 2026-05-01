@@ -3,6 +3,7 @@ import { getUser } from "@/lib/api";
 import supabase from "@/lib/supabase";
 import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { GrinvitesUser } from "@/lib/types";
+import { useTheme, Theme } from "./theme-context";
 
 interface UserContextType {
   user: GrinvitesUser | null;
@@ -18,6 +19,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<GrinvitesUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { setTheme } = useTheme();
 
   const handleAuthChange = async (_e: AuthChangeEvent, session: Session | null) => {
     console.log("auth changed!", session);
@@ -43,6 +45,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(data.data);
+      if (data.data?.theme) setTheme(data.data.theme as Theme);
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Unknown error");
       setError(error);

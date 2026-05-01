@@ -109,6 +109,9 @@ async def update_user(user_id: str, user_data: UserUpdate):
     if user_data.invite_times is not None:
         cursor.execute("UPDATE users SET invite_times=? WHERE id=?",
                        (json.dumps(user_data.invite_times), user_id))
+    if user_data.theme is not None:
+        cursor.execute("UPDATE users SET theme=? WHERE id=?",
+                       (user_data.theme, user_id))
     conn.commit()
     conn.close()
 

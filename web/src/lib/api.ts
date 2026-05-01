@@ -93,6 +93,16 @@ export const updateUserDisplayName = async (
     });
 };
 
+export const updateUserTheme = async (
+    userId: string,
+    theme: string,
+): Promise<ApiResponse<null>> => {
+    return apiFetch(`/users/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({ theme }),
+    });
+};
+
 export const updateUserSchedule = async (
     userId: string,
     inviteTimes: Record<string, string>,
