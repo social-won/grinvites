@@ -96,38 +96,97 @@ async def update_user(user_id, user_data: User):
 # Get user interests
 @app.get("/users/{user_id}/interests")
 async def read_user_interests(user_id):
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT interests FROM users WHERE id = ?", (user_id,))
-    interests_pulled = cursor.fetchall()
-    interests = []
-    for row in interests_pulled:
-        interests.append(row[1])
-    user = dict(zip(interests, user))
-    conn.close()
+    interests = get_user_interests(user_id)
     if not interests:
         raise HTTPException(status_code=404, detail="User not found")
-    return interests
+    
+    # Convert to list of dicts
+    column_names = ["id", "name", "type"]
+    interests_list = [dict(zip(column_names, row)) for row in interests]
+    return interests_list
 
 # Update user interests
-@app.put("/user/{user_id}/interests")
-async def set_user_interests(user_id):
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO interests (id) VALUES (?)", (user_id,))
-    conn.close()
-    pass
+@app.put("/users/{user_id}/interests")
+async def update_user_interests(user_id: str, interests_data: UserInterestsUpdate):
+    try:
+        # Get user to verify they exist
+        user = get_user(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Validate interest IDs before modifying the join table
+        if interests_data.interest_ids:
+            placeholders = ",".join(["?" for _ in interests_data.interest_ids])
+            cursor.execute(
+                f"SELECT id FROM interests WHERE id IN ({placeholders})",
+                tuple(interests_data.interest_ids),
+            )
+            valid_ids = {row[0] for row in cursor.fetchall()}
+            missing_ids = [i for i in interests_data.interest_ids if i not in valid_ids]
+            if missing_ids:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid interest_ids: {missing_ids}",
+                )
+
+        # Delete existing interests for this user
+        cursor.execute("DELETE FROM user_interests WHERE user_id = ?", (user_id,))
+
+        # Add new interests
+        for interest_id in interests_data.interest_ids:
+            cursor.execute(
+                "INSERT INTO user_interests (user_id, interest_id) VALUES (?, ?)",
+                (user_id, interest_id)
+            )
+        conn.commit()
+        conn.close()
+    except sqlite3.IntegrityError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except sqlite3.OperationalError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/interests")
 async def read_interests():
     return get_interests()
 
+# Get user events
+@app.get("/users/{user_id}/events")
+async def get_user_events(user_id: str):
+    # Verify user exists
+    user = get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get events that match user's interests
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT DISTINCT e.* FROM events e
+        INNER JOIN event_interests ei ON e.id = ei.event_id
+        INNER JOIN user_interests ui ON ei.interest_id = ui.interest_id
+        WHERE ui.user_id = ?
+        ORDER BY e.start_time
+    ''', (user_id,))
+    events = cursor.fetchall()
+    conn.close()
+    
+    if not events:
+        return []
+    
+    # Convert to list of dicts
+    column_names = ["id", "creation_time_stamp", "title", "start_time", "end_time", "location", "summary", "categories", "tags", "org_name", "frequency"]
+    events_list = [dict(zip(column_names, row)) for row in events]
+    return events_list
+
 
 # Get event object
 @app.get("/events/{event_id}")
 async def read_event(event_id):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM events WHERE id = ?", (event_id,))
     event_info = cursor.fetchall()

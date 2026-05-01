@@ -8,10 +8,13 @@ from models import User
 
 def get_db() -> sqlite3.Connection:
     path = os.getenv("DB_PATH", "database.db")
-    return sqlite3.connect(path)
+    conn = sqlite3.connect(path)
+    # Enable foreign key constraints
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 #Adds a user to the database
-def add_user(email, display_name=None, calendar_type=None, prefer_notify=0):
+def add_user(user: User):
     connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
@@ -86,25 +89,18 @@ def update_user_interests(email, interest_ids):
     connection.commit()
     connection.close()
 
-#Gets a user's interests via their email
+#Gets a user's interests via their user_id
 def get_user_interests(user_id):
     connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
-        SELECT interest_id FROM user_interests WHERE user_id = ?
+        SELECT i.* FROM interests i
+        INNER JOIN user_interests ui ON i.id = ui.interest_id
+        WHERE ui.user_id = ?
     ''', (user_id,))
-    interest_ids = cursor.fetchall()
-    user_interests = [row[0] for row in interest_ids]
-
-    for user_interest in user_interests:
-        cursor.execute('''
-            SELECT * FROM interests WHERE id = ?''', (user_interest))
-    final_interests = cursor.fetchall()
-
-        
-
+    interests = cursor.fetchall()
     connection.close()
-    return final_interests
+    return interests
 
 #Get all interests
 def get_interests():
@@ -123,13 +119,13 @@ def get_interests():
     connection.close()
     return interests
 
-def add_event(title, org_name, description, start_time, end_time, location, frequency):
-    connection = sqlite3.connect('test_grinvites.db')
+def add_event(title, start_time, end_time, location, summary = None, categories = None, tags = None, org_name = None, frequency = None):
+    connection = get_db()
     cursor = connection.cursor()
     cursor.execute('''
-        INSERT INTO events (title, org_name, description, start_time, end_time, location, frequency)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (title, org_name, description, start_time, end_time, location, frequency))
+        INSERT INTO events (creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name, frequency)
+        VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (title, start_time, end_time, location, summary, categories, tags, org_name, frequency))
     connection.commit()
     connection.close()
 
@@ -153,6 +149,16 @@ def get_event_by_title(title):
     event = cursor.fetchone()
     connection.close()
     return event
+
+def get_event_by_time(initial_start_time, final_start_time):
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT * FROM events WHERE start_time >= ? AND start_time <= ?
+    ''', (initial_start_time, final_start_time))
+    events = cursor.fetchall()
+    connection.close()
+    return events
 
 #Updates an event's interests or adds them if non exist.
 def update_event_interests(event_title, interest_ids):
@@ -228,13 +234,16 @@ def get_event_id_by_time(start_time):
 def get_users_for_event(event_id):
     connection = get_db()
     cursor = connection.cursor()
-    cursor.execute('''
-        SELECT user_id FROM event_users WHERE event_id = ?
-    ''', (event_id,))
-    user_ids = cursor.fetchall()
-    users = [row[0] for row in user_ids]
+    cursor.execute('SELECT interest_id FROM event_interests WHERE event_id = ?', (event_id,))
+    interest_ids = [row[0] for row in cursor.fetchall()]
+
+    user_ids = []
+    for interest_id in interest_ids:
+        cursor.execute('SELECT user_id FROM user_interests WHERE interest_id = ?', (interest_id,))
+        user_ids.extend(row[0] for row in cursor.fetchall())
+
     connection.close()
-    return users
+    return user_ids
 
 #returns the email and display name in json for all users of a given event
 def get_users_to_email(event_id):
