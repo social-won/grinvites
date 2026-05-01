@@ -1,3 +1,6 @@
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one level
+
 from api.db_functions import get_db
 
 def initialize_database():
@@ -30,7 +33,9 @@ def initialize_database():
         CREATE TABLE IF NOT EXISTS interests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            type TEXT
+            formatted_name TEXT NOT NULL,
+            type TEXT,
+            groups TEXT
     )         
     ''')
 
@@ -79,3 +84,6 @@ def initialize_database():
     connection.commit()
     connection.close()
     #print("Database initialized successfully.")
+
+if __name__ == "__main__":
+    initialize_database()

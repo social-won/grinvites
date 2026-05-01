@@ -1,5 +1,6 @@
 import json
-import sqlite3, os
+import sqlite3, os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one level
 
 from models import User
 #from scraper import scrape_events
@@ -100,6 +101,10 @@ def get_user_interests(user_id):
     ''', (user_id,))
     interests = cursor.fetchall()
     connection.close()
+
+    # Convert to list of dicts
+    column_names = [col[0] for col in cursor.description]
+    interests = [dict(zip(column_names, row)) for row in interests]
     return interests
 
 #Get all interests

@@ -9,14 +9,30 @@ export type LoginFormValues = z.infer<typeof loginSchema>
 export type GrinvitesUser = {
     id: string;
     email: string;
-    display_name: string | null;
+    display_name: string;
     invite_times: Record<string, string>;
 };
+
+export const GROUPS = [
+  "Academic Departments",
+  "Academic Resources",
+  "Affinity & Multicultural Organizations",
+  "Athletics",
+  "Campus Offices",
+  "Registered Student Organizations",
+  "Student Educational Policy Committees",
+  "Student Resources",
+  "Special Programs",
+] as const;
+
+export type GroupName = typeof GROUPS[number];
 
 export type Interest = {
     id: number;
     name: string;
+    formatted_name: string;
     type: string;
+    groups: GroupName[] | undefined
 };
 
 export type ApiEvent = {

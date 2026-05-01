@@ -24,28 +24,24 @@ export function formatScheduleTime(value: string): string {
   return `${hour12}:${String(m).padStart(2, '0')} ${isPM ? 'PM' : 'AM'}`
 }
 
-export function scheduleToSummary(days: string[], times: Record<string, string>): string {
-  return DAYS_OF_WEEK.filter(({ short }) => days.includes(short))
+export function scheduleToSummary(times: Record<string, string>): string {
+  return DAYS_OF_WEEK.filter(({ short }) => short in times)
     .map(({ day, short }) => `${day} at ${formatScheduleTime(times[short] ?? '08:00')}`)
     .join(', ')
 }
 
 interface InviteScheduleFormProps {
-  days: string[]
   times: Record<string, string>
-  onDaysChange: (days: string[]) => void
   onTimesChange: (times: Record<string, string>) => void
 }
 
-export function InviteScheduleForm({ days, times, onDaysChange, onTimesChange }: InviteScheduleFormProps) {
+export function InviteScheduleForm({ times, onTimesChange }: InviteScheduleFormProps) {
   const toggleDay = (short: string) => {
-    if (days.includes(short)) {
+    if (short in times) {
       const updatedTimes = { ...times }
       delete updatedTimes[short]
-      onDaysChange(days.filter((d) => d !== short))
       onTimesChange(updatedTimes)
     } else {
-      onDaysChange([...days, short])
       onTimesChange({ ...times, [short]: '08:00' })
     }
   }
@@ -56,7 +52,7 @@ export function InviteScheduleForm({ days, times, onDaysChange, onTimesChange }:
         <label className="text-sm font-medium">Days of the week</label>
         <div className="grid grid-cols-7 gap-1.5">
           {DAYS_OF_WEEK.map(({ short, letter }) => {
-            const selected = days.includes(short)
+            const selected = short in times
             return (
               <button
                 key={short}
@@ -77,10 +73,10 @@ export function InviteScheduleForm({ days, times, onDaysChange, onTimesChange }:
         </div>
       </div>
 
-      {days.length > 0 && (
+      {Object.keys(times).length > 0 && (
         <div className="flex flex-col gap-3">
           <label className="text-sm font-medium">Time of day</label>
-          {DAYS_OF_WEEK.filter(({ short }) => days.includes(short)).map(({ short, day }) => (
+          {DAYS_OF_WEEK.filter(({ short }) => short in times).map(({ short, day }) => (
             <div key={short} className="flex flex-col gap-1.5">
               <span className="text-xs text-muted-foreground">{day}</span>
               <div className="grid grid-cols-4 gap-1.5">

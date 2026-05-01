@@ -1,15 +1,29 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one level
+
+import json
+import unicodedata
+
 import requests
 import sqlite3
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta, timezone
-from api.sql_init import initialize_database
+from datetime import datetime, timezone
+# from sql_init import initialize_database
 from api.db_functions import get_db
+from models import Organization
 
 # Source: https://realpython.com/beautiful-soup-web-scraper-python/
 # Source: https://scrapfly.io/blog/posts/web-scraping-with-playwright-and-python
 # Source: https://github.com/seehorne/GetGrinnected
 
 JSON_URL = "https://events.grinnell.edu/live/json/events/response_fields/all/paginate"
+
+with open('api/organizations_clean.json', 'r') as file:
+    data = json.load(file)
+    data = [Organization(**item) for item in data]
+    ORGS = {item.name: item for item in data}
+    ORGS_COMMA = [item for item in data if item.has_comma]
 
 
 # Helper function to clean text by removing extra whitespace
@@ -34,18 +48,31 @@ def get_json_page(page_num):
 
     return requests.get(url).json() 
 
+def sanitize_name(s: str) -> str:
+    s = s.replace('’', '').replace('‘', '').replace("'", '').replace('“', '').replace('”', '')
+    s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
+    return s.lower().strip()
+
 #adds interest to interest table
-def add_interest(cursor, name, type="organization"):
+def add_interest(cursor, name, interest_type="organization"):
     if not name:
         return
-    name = clean_text(name).lower()
+    name = sanitize_name(clean_html(name))
     interests = name.split(", ")
+    # corrects for potential incorrect splitting of name by adding in any org with a comma in their name
+    if "," in name:
+        interests.extend(org.name for org in ORGS_COMMA if org.name in name)
+
     for interest in interests:
-        if cursor.execute('''SELECT EXISTS(SELECT 1 FROM interests WHERE name = ?)''', (interest,)):
+        try:
+            item = ORGS[interest]
+        # if cursor.execute('''SELECT EXISTS(SELECT 1 FROM interests WHERE name = ?)''', (interest,)):
             cursor.execute('''
-                INSERT OR IGNORE INTO interests (name, type)
-                VALUES (?, ?)
-                ''', (interest, type))
+            INSERT OR IGNORE INTO interests (name, formatted_name, type, groups)
+            VALUES (?, ?, ?, ?)
+            ''', (item.name, item.formatted_name, interest_type, json.dumps(item.groups)))
+        except KeyError:
+            print(interest, "not found")
 
 #gets the id of an interest
 def get_interest_id(cursor, name):
@@ -77,14 +104,18 @@ def get_interest_by_id(interest_id, interests):
 
 # Scrape events from the LiveWhale JSON endpoint
 def scrape_events():
-    initialize_database()
+    print("scraping!")
+    # initialize_database()
 
     connection = get_db()
     cursor = connection.cursor()
 
+    # Temporarily disable FK constraints for initialization
+    cursor.execute("PRAGMA foreign_keys = OFF")
     cursor.execute("DELETE FROM events")
     cursor.execute("DELETE FROM interests")
     cursor.execute("DELETE FROM event_interests")
+    cursor.execute("PRAGMA foreign_keys = ON")
 
     events = {}
 
@@ -232,7 +263,7 @@ def scrape_events():
 #                 events[id]["frequency"] = 
 
 # Tests if events were successfully inserted into the database by fetching and printing the first 5 events.
-def test_db():
+def test_scraping():
     connection = get_db()
     cursor = connection.cursor()
 
@@ -274,20 +305,19 @@ def test_db():
         print()
     
     for interest in interests:
-        print("Interest ID:", interest[0])
+        # print("Interest ID:", interest[0])
         print("Interest Name:", interest[1])
-        print()
     
-    for event_interest in event_interests:
-        print("Event ID:", event_interest[0])
-        print("Interest ID:", event_interest[1])
-        print("Interest Name:", get_interest_by_id(event_interest[1], interests))
-        print()
+    # for event_interest in event_interests:
+    #     print("Event ID:", event_interest[0])
+    #     print("Interest ID:", event_interest[1])
+    #     print("Interest Name:", get_interest_by_id(event_interest[1], interests))
+    #     print()
         
 
 # run manually for testing
 if __name__ == "__main__":
     events = scrape_events()
-    test_db()
+    test_scraping()
     
     print("Number of events found:", len(events))

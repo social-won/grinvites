@@ -1,4 +1,4 @@
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import { Pencil, Plus, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -13,45 +13,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog'
-
-const ALL_INTERESTS = [
-  { category: 'classes', label: 'CSC-151 — Fundamentals of CS' },
-  { category: 'classes', label: 'CSC-207 — Object-Oriented Design' },
-  { category: 'classes', label: 'CSC-301 — Algorithm Analysis' },
-  { category: 'classes', label: 'MAT-218 — Discrete Structures' },
-  { category: 'classes', label: 'MAT-316 — Foundations of Analysis' },
-  { category: 'classes', label: 'PHY-132 — General Physics II' },
-  { category: 'classes', label: 'ANT-104 — Introduction to Anthropology' },
-  { category: 'classes', label: 'ENG-120 — Writing for College' },
-  { category: 'departments', label: 'Computer Science' },
-  { category: 'departments', label: 'Mathematics' },
-  { category: 'departments', label: 'Physics' },
-  { category: 'departments', label: 'Art' },
-  { category: 'departments', label: 'Sociology' },
-  { category: 'departments', label: 'English' },
-  { category: 'departments', label: 'History' },
-  { category: 'departments', label: 'Biology' },
-  { category: 'departments', label: 'Chemistry' },
-  { category: 'departments', label: 'Psychology' },
-  { category: 'athletics', label: 'Football' },
-  { category: 'athletics', label: 'Basketball' },
-  { category: 'athletics', label: 'Soccer' },
-  { category: 'athletics', label: 'Track & Field' },
-  { category: 'athletics', label: 'Swimming' },
-  { category: 'athletics', label: 'Tennis' },
-  { category: 'athletics', label: 'Volleyball' },
-  { category: 'athletics', label: 'Cross Country' },
-  { category: 'clubs', label: 'Brazilian Jiu-Jitsu' },
-  { category: 'clubs', label: 'Campus Wide' },
-  { category: 'clubs', label: 'Chess Club' },
-  { category: 'clubs', label: 'Debate Team' },
-  { category: 'clubs', label: 'Film Society' },
-  { category: 'clubs', label: 'Hiking Club' },
-  { category: 'clubs', label: 'Photography Club' },
-  { category: 'clubs', label: 'Student Government' },
-  { category: 'clubs', label: 'Robotics Club' },
-  { category: 'clubs', label: 'Community Garden' },
-] as const
+import {
+  type Interest,
+  getInterests,
+  getUserInterests,
+  getUserSchedule,
+  updateUserInterests,
+  updateUserSchedule,
+} from '@/lib/api'
 
 const PreferencesTab: FC = () => {
   const { user } = useUser()
@@ -61,44 +30,38 @@ const PreferencesTab: FC = () => {
   const [calendarEmailDraft, setCalendarEmailDraft] = useState(calendarEmail)
 
   const [scheduleOpen, setScheduleOpen] = useState(false)
-  const [inviteDays, setInviteDays] = useState<string[]>(['Mon', 'Wed', 'Fri'])
-  const [inviteTimes, setInviteTimes] = useState<Record<string, string>>({
-    Mon: '08:00',
-    Wed: '12:00',
-    Fri: '08:00',
-  })
-  const [draftDays, setDraftDays] = useState(inviteDays)
-  const [draftTimes, setDraftTimes] = useState(inviteTimes)
+  const [inviteTimes, setInviteTimes] = useState<Record<string, string>>({})
+  const [draftTimes, setDraftTimes] = useState<Record<string, string>>({})
 
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  const [watching, setWatching] = useState({
-    classes: ['MAT-444', 'ANT-260', 'CSC-324'],
-    departments: ['Art', 'Sociology', 'Computer Science'],
-    athletics: ['Football', 'Track'],
-    clubs: ['Brazilian Jujitsu', 'Campus Wide'],
-  })
-
+  const [allInterests, setAllInterests] = useState<Interest[]>([])
+  const [userInterestIds, setUserInterestIds] = useState<number[]>([])
   const [interestSearch, setInterestSearch] = useState('')
 
-  const addItem = (category: keyof typeof watching, item: string) => {
-    setWatching((prev) => ({
-      ...prev,
-      [category]: prev[category].includes(item) ? prev[category] : [...prev[category], item],
-    }))
+  useEffect(() => {
+    if (!user) return
+    getUserSchedule(user.id).then(({ data }) => {
+      if (data) setInviteTimes(data.invite_times)
+    })
+    getUserInterests(user.id).then(({ data }) => {
+      if (data) setUserInterestIds(data.map((i) => i.id))
+    })
+    getInterests().then(({ data }) => { if (data) setAllInterests(data) })
+  }, [user])
+
+  const toggleInterest = async (id: number) => {
+    const next = userInterestIds.includes(id)
+      ? userInterestIds.filter((i) => i !== id)
+      : [...userInterestIds, id]
+    setUserInterestIds(next)
+    if (user) await updateUserInterests(user.id, next)
   }
 
-  const removeItem = (category: keyof typeof watching, item: string) => {
-    setWatching((prev) => ({
-      ...prev,
-      [category]: prev[category].filter((i) => i !== item),
-    }))
-  }
-
-  const scheduleSummary = scheduleToSummary(inviteDays, inviteTimes)
+  const scheduleSummary = scheduleToSummary(inviteTimes)
 
   return (
     <div className="p-6 space-y-6 w-full pb-24">
@@ -112,10 +75,7 @@ const PreferencesTab: FC = () => {
               <button
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => {
-                  if (!scheduleOpen) {
-                    setDraftDays([...inviteDays])
-                    setDraftTimes({ ...inviteTimes })
-                  }
+                  if (!scheduleOpen) setDraftTimes({ ...inviteTimes })
                   setScheduleOpen((o) => !o)
                 }}
               >
@@ -131,9 +91,7 @@ const PreferencesTab: FC = () => {
         {scheduleOpen && (
           <div className="space-y-4 pt-1">
             <InviteScheduleForm
-              days={draftDays}
               times={draftTimes}
-              onDaysChange={setDraftDays}
               onTimesChange={setDraftTimes}
             />
             <div className="flex gap-2">
@@ -144,10 +102,10 @@ const PreferencesTab: FC = () => {
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  setInviteDays([...draftDays])
+                onClick={async () => {
                   setInviteTimes({ ...draftTimes })
                   setScheduleOpen(false)
+                  if (user) await updateUserSchedule(user.id, draftTimes)
                 }}
               >
                 Save
@@ -162,22 +120,27 @@ const PreferencesTab: FC = () => {
       {/* Current Interests */}
       <section className="space-y-4">
         <h3 className="text-base font-semibold">Current Interests</h3>
-        {(['classes', 'departments', 'athletics', 'clubs'] as const).map((category) => (
-          <div key={category} className="space-y-2">
-            <h4 className="text-sm font-medium capitalize">{category}</h4>
-            <div className="flex flex-wrap gap-2">
-              {watching[category].map((item) => (
-                <Badge key={item}>
-                  <X
-                    className="h-3.5 w-3.5 cursor-pointer"
-                    onClick={() => removeItem(category, item)}
-                  />
-                  {item}
-                </Badge>
-              ))}
+        {(['class', 'department', 'athletics', 'club'] as const).map((type) => {
+          const items = allInterests.filter((i) => i.type === type && userInterestIds.includes(i.id))
+          if (items.length === 0) return null
+          const label = { class: 'Classes', department: 'Departments', athletics: 'Athletics', club: 'Clubs' }[type]
+          return (
+            <div key={type} className="space-y-2">
+              <h4 className="text-sm font-medium">{label}</h4>
+              <div className="flex flex-wrap gap-2">
+                {items.map((item) => (
+                  <Badge key={item.id}>
+                    <X className="h-3.5 w-3.5 cursor-pointer" onClick={() => toggleInterest(item.id)} />
+                    {item.name}
+                  </Badge>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
+        {userInterestIds.length === 0 && (
+          <p className="text-sm text-muted-foreground">No interests added yet.</p>
+        )}
 
         <Dialog onOpenChange={(open) => { if (!open) setInterestSearch('') }}>
           <DialogTrigger asChild>
@@ -197,26 +160,28 @@ const PreferencesTab: FC = () => {
               autoFocus
             />
             <div className="overflow-y-auto max-h-96 -mx-6 px-6 space-y-1">
-              {ALL_INTERESTS.filter(({ label }) =>
-                label.toLowerCase().includes(interestSearch.toLowerCase())
-              ).map(({ category, label }) => {
-                const added = (watching[category as keyof typeof watching] as string[]).includes(label)
-                return (
-                  <button
-                    key={`${category}-${label}`}
-                    type="button"
-                    onClick={() => addItem(category as keyof typeof watching, label)}
-                    disabled={added}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm hover:bg-accent transition-colors disabled:opacity-40 disabled:cursor-default text-left"
-                  >
-                    <div>
-                      <span>{label}</span>
-                      <span className="ml-2 text-xs text-muted-foreground capitalize">{category}</span>
-                    </div>
-                    {added && <span className="text-xs text-muted-foreground">Added</span>}
-                  </button>
-                )
-              })}
+              {allInterests
+                .filter(({ name }) => name.toLowerCase().includes(interestSearch.toLowerCase()))
+                .map((interest) => {
+                  const added = userInterestIds.includes(interest.id)
+                  return (
+                    <button
+                      key={interest.id}
+                      type="button"
+                      onClick={() => toggleInterest(interest.id)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm hover:bg-accent transition-colors text-left"
+                    >
+                      <div>
+                        <span>{interest.name}</span>
+                        <span className="ml-2 text-xs text-muted-foreground capitalize">{interest.type}</span>
+                      </div>
+                      {added && <span className="text-xs text-muted-foreground shrink-0">Added</span>}
+                    </button>
+                  )
+                })}
+              {allInterests.length === 0 && (
+                <p className="px-3 py-4 text-sm text-muted-foreground text-center">No interests available</p>
+              )}
             </div>
           </DialogContent>
         </Dialog>

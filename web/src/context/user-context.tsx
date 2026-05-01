@@ -20,7 +20,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   const handleAuthChange = async (_e: AuthChangeEvent, session: Session | null) => {
-    console.log(session);
+    console.log("auth changed!", session);
     
     if (!session?.user) {
       setUser(null);
@@ -32,18 +32,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
 
-      const data = await getUser(session.user.id).catch(console.log);
-
+      const data = await getUser(session.user.id, session.access_token).catch((e) => {
+        console.log("ERROR!")
+        console.log(e)
+      });
+      
       if (!data) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || "",
-          prefer_notify: 0
-        });
+        setError(new Error("User not found in database"))
         return;
       }
 
-      setUser(data);
+      setUser(data.data);
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Unknown error");
       setError(error);
@@ -54,6 +53,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    console.log("user updated!", user);
+    
+  }, [user])
+  
+
+  useEffect(() => {
+    console.log("Set up auth change listener")
     const { data: listener } = supabase.auth.onAuthStateChange(handleAuthChange);
 
     return () => {

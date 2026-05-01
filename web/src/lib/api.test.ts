@@ -123,26 +123,27 @@ describe("createUser / getUser", () => {
 // Schedule
 // ---------------------------------------------------------------------------
 
-// describe("updateUserInviteSchedule / getUserInviteSchedule", () => {
-//     skip("saves a schedule and reads it back", async () => {
-//         const times = { Mon: "08:00", Wed: "12:00", Fri: "17:00" };
+describe("updateUserInviteSchedule / getUserInviteSchedule", () => {
+    skip("saves a schedule and reads it back", async () => {
+        const times = { Mon: "08:00", Wed: "12:00", Fri: "17:00" };
 
-//         await updateUserSchedule(TEST_UID, times);
+        await updateUserSchedule(TEST_UID, times);
 
-//         const saved = await getUserSchedule(TEST_UID);
-//         expect(saved).not.toBeNull();
-//         expect(saved).toEqual(times);
-//     });
+        const { data } = await getUserSchedule(TEST_UID);
+        
+        expect(data).not.toBeNull();
+        expect(data?.invite_times).toEqual(times);
+    });
 
-//     skip("overwrites a previously saved schedule", async () => {
-//         await updateUserSchedule(TEST_UID, ["Tue"], { Tue: "09:00" });
-//         await updateUserSchedule(TEST_UID, ["Thu"], { Thu: "14:00" });
+    skip("overwrites a previously saved schedule", async () => {
+        await updateUserSchedule(TEST_UID, { Tue: "09:00" });
+        await updateUserSchedule(TEST_UID, { Thu: "14:00" });
 
-//         const saved = await getUserSchedule(TEST_UID);
-//         expect(saved!.invite_days).toEqual(["Thu"]);
-//         expect(saved!.invite_times).toEqual({ Thu: "14:00" });
-//     });
-// });
+        const { data } = await getUserSchedule(TEST_UID);
+        expect(data).not.toBeNull();
+        expect(data?.invite_times).toEqual({ Thu: "14:00" });
+    });
+});
 
 // ---------------------------------------------------------------------------
 // Interests
@@ -151,7 +152,6 @@ describe("createUser / getUser", () => {
 describe("getInterests", () => {
     skip("returns an array of interests", async () => {
         const {status, data } = await getInterests();
-        console.log(data)
         expect(Array.isArray(data)).toBe(true);
         expect(status).toBe(200);
     });

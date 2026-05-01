@@ -26,7 +26,7 @@ const HomeScreen: FC = () => {
     <div className="min-h-screen bg-background">
 
       {/* Tabs */}
-      <Tabs defaultValue="preferences">
+      <Tabs defaultValue="schedule">
         {/* Top bar */}
         <div className="sticky top-0 z-10 bg-background border-b px-6 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center justify-between sm:flex-1">
@@ -37,7 +37,7 @@ const HomeScreen: FC = () => {
           </div>
 
           <TabsList variant="default" className="bg-transparent border px-2 w-full sm:w-auto">
-            <TabsTrigger disabled value="schedule" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Schedule</TabsTrigger>
+            <TabsTrigger value="schedule" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Schedule</TabsTrigger>
             <TabsTrigger disabled value="hours" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Hours</TabsTrigger>
             <TabsTrigger value="preferences" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Preferences</TabsTrigger>
           </TabsList>

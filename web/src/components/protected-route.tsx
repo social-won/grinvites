@@ -6,5 +6,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
+  // TODO: add onboarding check to user
+  // if (user && !user.hasOnboarded) return <Navigate to="/onboarding" />
   return <>{children}</>;
 }
