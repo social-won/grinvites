@@ -159,24 +159,37 @@ describe("getInterests", () => {
 
 describe("updateUserInterests / getUserInterests", () => {
     skip("saves interest IDs and reads them back", async () => {
-        const ids = [1, 2, 4];
+        const interestsRes = await getInterests();
+        expect(Array.isArray(interestsRes.data)).toBe(true);
+        const availableIds = interestsRes.data?.map((i: { id: number }) => i.id) ?? [];
+        expect(availableIds.length).toBeGreaterThanOrEqual(3);
+
+        const ids = availableIds.slice(0, 3);
         await updateUserInterests(TEST_UID, ids);
 
-        const {data, status} = await getUserInterests(TEST_UID);
+        const {data} = await getUserInterests(TEST_UID);
         expect(Array.isArray(data)).toBe(true);
         const savedIds = data?.map((i: { id: number }) => i.id);
         expect(savedIds).toEqual(expect.arrayContaining(ids));
     });
 
     skip("replacing interests removes old ones", async () => {
-        await updateUserInterests(TEST_UID, [1, 2, 4]);
-        await updateUserInterests(TEST_UID, [7, 8]);
+        const interestsRes = await getInterests();
+        expect(Array.isArray(interestsRes.data)).toBe(true);
+        const availableIds = interestsRes.data?.map((i: { id: number }) => i.id) ?? [];
+        expect(availableIds.length).toBeGreaterThanOrEqual(5);
+
+        const initialIds = availableIds.slice(0, 3);
+        const replacementIds = availableIds.slice(3, 5);
+
+        await updateUserInterests(TEST_UID, initialIds);
+        await updateUserInterests(TEST_UID, replacementIds);
 
         const {data} = await getUserInterests(TEST_UID);
         expect(Array.isArray(data)).toBe(true);
         const savedIds = data?.map((i: { id: number }) => i.id);
-        expect(savedIds).toEqual(expect.arrayContaining([7, 8]));
-        expect(savedIds).not.toContain(1);
+        expect(savedIds).toEqual(expect.arrayContaining(replacementIds));
+        initialIds.forEach((id) => expect(savedIds).not.toContain(id));
     });
 });
 

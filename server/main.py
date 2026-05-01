@@ -114,12 +114,28 @@ async def update_user_interests(user_id: str, interests_data: UserInterestsUpdat
         user = get_user(user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        # Delete existing interests for this user
+
         conn = get_db()
         cursor = conn.cursor()
+
+        # Validate interest IDs before modifying the join table
+        if interests_data.interest_ids:
+            placeholders = ",".join(["?" for _ in interests_data.interest_ids])
+            cursor.execute(
+                f"SELECT id FROM interests WHERE id IN ({placeholders})",
+                tuple(interests_data.interest_ids),
+            )
+            valid_ids = {row[0] for row in cursor.fetchall()}
+            missing_ids = [i for i in interests_data.interest_ids if i not in valid_ids]
+            if missing_ids:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid interest_ids: {missing_ids}",
+                )
+
+        # Delete existing interests for this user
         cursor.execute("DELETE FROM user_interests WHERE user_id = ?", (user_id,))
-        
+
         # Add new interests
         for interest_id in interests_data.interest_ids:
             cursor.execute(
@@ -128,6 +144,8 @@ async def update_user_interests(user_id: str, interests_data: UserInterestsUpdat
             )
         conn.commit()
         conn.close()
+    except sqlite3.IntegrityError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except sqlite3.OperationalError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
