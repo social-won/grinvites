@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -27,10 +27,11 @@ import { useUser } from "@/context/user-context"
 
 export function SignupPage() {
   const navigate = useNavigate()
-  const { user } = useUser()
+  const { user, setUser } = useUser()
+  const justSignedUp = useRef(false)
 
   useEffect(() => {
-    if (user) {
+    if (user && !justSignedUp.current) {
       navigate("/home");
     }
   }, [user])
@@ -63,16 +64,20 @@ export function SignupPage() {
     }).then(({ data }) => {
 
       if (data.user) {
-        // if user is created, make BACKEND API call
-        createUser({
+        const newUser = {
           id: data.user.id,
           email: data.user.email!!,
           display_name: data.user.user_metadata.display_name,
           invite_times: {},
           theme: "light"
-        }).then((({ status }) => {
+        }
+        // if user is created, make BACKEND API call
+        createUser(newUser).then((({ status }) => {
+          console.log("user created", status);
+
           if (status == 201) {
-            // if the creation of the user is successful
+            justSignedUp.current = true
+            setUser(newUser)
             navigate("/onboarding")
           } else {
             console.error("status: ", status)

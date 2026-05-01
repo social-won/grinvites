@@ -22,7 +22,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { setTheme } = useTheme();
 
   const handleAuthChange = async (_e: AuthChangeEvent, session: Session | null) => {
-    console.log("auth changed!", session);
+    console.log("auth changed!", session, _e);
+
     
     if (!session?.user) {
       setUser(null);
@@ -38,9 +39,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log("ERROR!")
         console.log(e)
       });
-      
-      if (!data) {
-        setError(new Error("User not found in database"))
+
+      if (!data?.data) {
+        // On SIGNED_IN, a 404 means signup is in progress — the signup page
+        // will call setUser directly once createUser completes.
+        if (_e !== "SIGNED_IN") setError(new Error("User not found in database"))
         return;
       }
 
