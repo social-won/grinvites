@@ -19,16 +19,7 @@ import { FaMicrosoft, FaGoogle, FaApple } from "react-icons/fa";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { useUser } from "@/context/user-context";
 import { classesData, hoursData } from "@/lib/api";
-
-const DAYS_OF_WEEK = [
-  { day: "Monday", short: "Mon", letter: "M" },
-  { day: "Tuesday", short: "Tue", letter: "T" },
-  { day: "Wednesday", short: "Wed", letter: "W" },
-  { day: "Thursday", short: "Thu", letter: "Th" },
-  { day: "Friday", short: "Fri", letter: "F" },
-  { day: "Saturday", short: "Sat", letter: "S" },
-  { day: "Sunday", short: "Sun", letter: "Su" },
-];
+import { InviteScheduleForm, DAYS_OF_WEEK, formatScheduleTime } from "./invite-schedule-form";
 
 const steps = [
   // {
@@ -63,19 +54,6 @@ const steps = [
   }
 ];
 
-function parse(value: string): { hour12: number; minute: number; isPM: boolean } {
-  const [h, m] = value.split(":").map(Number);
-  return {
-    hour12: h % 12 === 0 ? 12 : h % 12,
-    minute: m,
-    isPM: h >= 12,
-  };
-}
-
-function formatTime(value: string): string {
-  const { hour12, minute, isPM } = parse(value);
-  return `${hour12}:${String(minute).padStart(2, "0")} ${isPM ? "PM" : "AM"}`;
-}
 
 export default function OnboardingFlow() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -241,88 +219,23 @@ export default function OnboardingFlow() {
               </CardDescription>
             </CardHeader>
 
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">Days of the week</label>
-                <div className="grid grid-cols-7 gap-1.5">
-                  {DAYS_OF_WEEK.map(({ short, letter }) => {
-                    const selected = formData.inviteDays.includes(short);
-                    return (
-                      <button
-                        key={short}
-                        type="button"
-                        onClick={() => {
-                          if (selected) {
-                            const updatedDays = formData.inviteDays.filter((d) => d !== short);
-                            const updatedTimes = { ...formData.inviteTimes };
-                            delete updatedTimes[short];
-                            setFormData((prev) => ({ ...prev, inviteDays: updatedDays, inviteTimes: updatedTimes }));
-                          } else {
-                            setFormData((prev) => ({
-                              ...prev,
-                              inviteDays: [...prev.inviteDays, short],
-                              inviteTimes: { ...prev.inviteTimes, [short]: "08:00" }
-                            }));
-                          }
-                        }}
-                        className={cn(
-                          "h-10 w-full rounded-md border text-sm font-medium transition-colors",
-                          selected
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background text-foreground border-input hover:bg-accent"
-                        )}
-                      >
-                        <span className="hidden sm:inline">{short}</span>
-                        <span className="sm:hidden">{letter}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            <InviteScheduleForm
+                days={formData.inviteDays}
+                times={formData.inviteTimes}
+                onDaysChange={(days) => setFormData((prev) => ({ ...prev, inviteDays: days }))}
+                onTimesChange={(times) => setFormData((prev) => ({ ...prev, inviteTimes: times }))}
+              />
 
               {formData.inviteDays.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Times</label>
-                  {DAYS_OF_WEEK.filter(({ short }) => formData.inviteDays.includes(short)).map(({ short }) => (
-                    <div key={short} className="flex items-center gap-3">
-                      <span className="w-10 text-sm font-medium">{short}</span>
-                      <Input
-                        type="time"
-                        value={formData.inviteTimes[short] ?? "08:00"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            inviteTimes: { ...prev.inviteTimes, [short]: e.target.value }
-                          }))
-                        }
-                        className="w-36"
-                      />
-                      {/* <TimePicker
-                        value={formData.inviteTimes[short] ?? "08:00"}
-                        onChange={(v) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            inviteTimes: { ...prev.inviteTimes, [short]: v }
-                          }))
-                        }
-                      /> */}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {formData.inviteDays.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  You will be sent invites at{" "}
+                <p className="text-sm text-muted-foreground mt-2">
                   {DAYS_OF_WEEK.filter(({ short }) => formData.inviteDays.includes(short)).map(({ day, short }, i, arr) => (
                     <span key={short}>
-                      <strong>{formatTime(formData.inviteTimes[short] ?? "08:00")}</strong> on <strong>{day}</strong>
+                      <strong>{day}</strong> at <strong>{formatScheduleTime(formData.inviteTimes[short] ?? "08:00")}</strong>
                       {i < arr.length - 1 ? ", " : ""}
                     </span>
                   ))}
                 </p>
               )}
-            </div>
           </div>
         );
 

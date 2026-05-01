@@ -9,47 +9,45 @@ import { Button } from '@/components/ui/button'
 import ScheduleTab from './tabs/schedule-tab'
 import HoursTab from './tabs/hours-tab'
 import PreferencesTab from './tabs/preferences-tab'
-import { useNavigate } from 'react-router-dom'
 import { useUser } from '@/context/user-context'
+import { useNavigate } from 'react-router-dom'
 import supabase from '@/lib/supabase'
 
 const HomeScreen: FC = () => {
-  const navigate = useNavigate();
   const { user } = useUser();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/login");
+    navigate('/login');
   };
 
   return (
     <div className="min-h-screen bg-background">
 
       {/* Tabs */}
-      <Tabs defaultValue="schedule">
+      <Tabs defaultValue="preferences">
         {/* Top bar */}
-        <div className="sticky top-0 z-10 bg-background border-b px-6 py-3 flex items-center gap-2">
-          <div className="flex-1">
-            <span className="text-sm text-muted-foreground flex flex-col lg:flex-row lg:gap-1">
-              <span>Logged in as:</span>
-              <span className="font-medium text-foreground">{user?.email}</span>
+        <div className="sticky top-0 z-10 bg-background border-b px-6 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex items-center justify-between sm:flex-1">
+            <span className="text-sm text-muted-foreground">
+              Logged in as: <span className="font-medium text-foreground">{user?.email}</span>
             </span>
+            <Button variant="destructive" size="sm" onClick={handleSignOut} className="sm:hidden">Sign out</Button>
           </div>
 
-          {/* <TabsList variant="default" className="bg-transparent border px-2">
-            <TabsTrigger value="schedule" className="w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Schedule</TabsTrigger>
-            <TabsTrigger value="hours" className="w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Hours</TabsTrigger>
-            <TabsTrigger value="preferences" className="w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Preferences</TabsTrigger>
-          </TabsList> */}
+          <TabsList variant="default" className="bg-transparent border px-2 w-full sm:w-auto">
+            <TabsTrigger disabled value="schedule" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Schedule</TabsTrigger>
+            <TabsTrigger disabled value="hours" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Hours</TabsTrigger>
+            <TabsTrigger value="preferences" className="flex-1 sm:w-24 data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800">Preferences</TabsTrigger>
+          </TabsList>
 
-          <div className="flex-1 flex justify-end">
-            <Button variant="destructive" size="sm" onClick={handleSignOut} className="w-24">
-              Sign out
-            </Button>
+          <div className="hidden sm:flex sm:flex-1 sm:justify-end">
+            <Button variant="destructive" size="sm" onClick={handleSignOut}>Sign out</Button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between lg:px-60 md:px-32 py-4 w-screen">
+        <div className="w-full max-w-xl mx-auto">
           <TabsContent value="schedule">
             <ScheduleTab />
           </TabsContent>
@@ -60,7 +58,6 @@ const HomeScreen: FC = () => {
             <PreferencesTab />
           </TabsContent>
         </div>
-
       </Tabs>
     </div>
   )

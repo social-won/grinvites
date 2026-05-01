@@ -20,8 +20,9 @@ import { Controller, useForm, UseFormReturn } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import supabase from "@/lib/supabase"
 
-import { SignupFormValues, signupSchema } from "@/lib/utils"
+import { signupSchema } from "@/lib/utils"
 import { createUser } from "@/lib/api"
+import { SignupFormValues } from "@/lib/types"
 
 export function SignupPage() {
   const navigate = useNavigate()
@@ -62,7 +63,12 @@ export function SignupPage() {
     }
 
     if (data.user) {
-      createUser(data.user)
+      createUser({
+        id: data.user.id,
+        email: data.user.email!!,
+        display_name: data.user.user_metadata.display_name,
+        invite_times: {}
+      })
 
       navigate("/onboarding")
     }
@@ -70,7 +76,7 @@ export function SignupPage() {
 
   return (
     <div className="flex min-h-screen flex-col gap-6 p-4 items-center justify-center">
-      <Card className={page === 1 ? "w-full max-w-xl": "w-full max-w-sm"}>
+      <Card className="w-full max-w-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">{page == 1 ? "Create your account" : "Connect your email to Grinvites"}</CardTitle>
           <CardDescription>
@@ -92,11 +98,6 @@ export function SignupPage() {
 
 export function SignupForm({ form, onSubmit }: { form: UseFormReturn<SignupFormValues>, onSubmit: (values: SignupFormValues) => Promise<void> }) {
 
-  // return (
-  //   <>
-  //   hi
-  //   </>
-  // )
   return (
     <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
       <FieldGroup className="gap-4 max-w-xl w-full">
@@ -196,17 +197,16 @@ export function SignupForm({ form, onSubmit }: { form: UseFormReturn<SignupFormV
   )
 }
 
-function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues> }) {
-
+function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues>, setPage: React.Dispatch<React.SetStateAction<number>> }) {
 
   return (
-    <form noValidate onSubmit={() => console.log(form)}>
+    <form noValidate onSubmit={() => console.log(form)} className="w-full">
       <FieldGroup className="flex justify-center items-center gap-4" >
         <Controller
           name="email"
           control={form.control}
           render={({ field, fieldState }) => (
-            <Field className="max-w-3xs w-full">
+            <Field className="w-full">
               {/* <FieldLabel htmlFor="email">Email</FieldLabel> */}
               <Input
                 {...field}
@@ -223,7 +223,7 @@ function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues> })
         />
 
           <Button 
-            className="w-full max-w-3xs"
+            className="w-full"
             onClick={async (_e) => {
             _e.preventDefault();
             const isValid = await form.trigger("email");

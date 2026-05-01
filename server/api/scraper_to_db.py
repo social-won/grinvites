@@ -1,4 +1,5 @@
 import sqlite3
+from server.api.db_functions import get_db
 from sql_init import initialize_database
 from scraper import scrape_events
 
@@ -9,7 +10,7 @@ def insert_events_into_db():
     initialize_database()
     events = scrape_events()
 
-    connection = sqlite3.connect("test_grinvites.db")
+    connection = get_db()
     cursor = connection.cursor()
 
     cursor.execute("DELETE FROM events")
@@ -43,7 +44,7 @@ def insert_events_into_db():
 
 # Tests if events were successfully inserted into the database by fetching and printing the first 5 events.
 def test_db():
-    connection = sqlite3.connect("test_grinvites.db")
+    connection = get_db()
     cursor = connection.cursor()
     
     cursor.execute('''

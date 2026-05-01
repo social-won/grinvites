@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { getUser } from "@/lib/api";
 import supabase from "@/lib/supabase";
 import { AuthChangeEvent, Session } from "@supabase/supabase-js";
-import { GrinvitesUser } from "@/lib/utils";
+import { GrinvitesUser } from "@/lib/types";
 
 interface UserContextType {
   user: GrinvitesUser | null;
