@@ -1,3 +1,4 @@
+from __future__ import annotations
 import smtplib
 import socket
 from domain_validator import DomainValidator
