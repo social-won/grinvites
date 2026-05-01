@@ -14,13 +14,27 @@ import {
   DialogTrigger,
 } from '../ui/dialog'
 import {
-  type Interest,
   getInterests,
   getUserInterests,
   getUserSchedule,
   updateUserInterests,
   updateUserSchedule,
 } from '@/lib/api'
+import { Interest, GROUPS, GroupName } from '@/lib/types'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import { Checkbox } from '../ui/checkbox'
+
+function InterestRow({ interest, selected, onToggle, indent = false }: { interest: Interest; selected: boolean; onToggle: (id: number) => void; indent?: boolean }) {
+  return (
+    <div
+      onClick={() => onToggle(interest.id)}
+      className={`w-full flex items-center gap-3 py-2.5 pr-6 text-sm transition-colors cursor-pointer hover:bg-accent ${indent ? 'pl-10' : 'pl-6'}`}
+    >
+      <Checkbox checked={selected} onCheckedChange={() => onToggle(interest.id)} onClick={(e) => e.stopPropagation()} />
+      <span>{interest.formatted_name}</span>
+    </div>
+  )
+}
 
 const PreferencesTab: FC = () => {
   const { user } = useUser()
@@ -40,7 +54,10 @@ const PreferencesTab: FC = () => {
 
   const [allInterests, setAllInterests] = useState<Interest[]>([])
   const [userInterestIds, setUserInterestIds] = useState<number[]>([])
+  const [interestDialogOpen, setInterestDialogOpen] = useState(false)
+  const [draftInterestIds, setDraftInterestIds] = useState<number[]>([])
   const [interestSearch, setInterestSearch] = useState('')
+  const [collapsedDialogGroups, setCollapsedDialogGroups] = useState<Set<GroupName>>(new Set(GROUPS))
 
   useEffect(() => {
     if (!user) return
@@ -53,12 +70,29 @@ const PreferencesTab: FC = () => {
     getInterests().then(({ data }) => { if (data) setAllInterests(data) })
   }, [user])
 
-  const toggleInterest = async (id: number) => {
-    const next = userInterestIds.includes(id)
-      ? userInterestIds.filter((i) => i !== id)
-      : [...userInterestIds, id]
+  const removeInterest = async (id: number) => {
+    const next = userInterestIds.filter((i) => i !== id)
     setUserInterestIds(next)
     if (user) await updateUserInterests(user.id, next)
+  }
+
+  const toggleDraftInterest = (id: number) => {
+    setDraftInterestIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const openInterestDialog = () => {
+    setDraftInterestIds([...userInterestIds])
+    setInterestSearch('')
+    setCollapsedDialogGroups(new Set(GROUPS))
+    setInterestDialogOpen(true)
+  }
+
+  const saveInterests = async () => {
+    setUserInterestIds([...draftInterestIds])
+    setInterestDialogOpen(false)
+    if (user) await updateUserInterests(user.id, draftInterestIds)
   }
 
   const scheduleSummary = scheduleToSummary(inviteTimes)
@@ -120,68 +154,107 @@ const PreferencesTab: FC = () => {
       {/* Current Interests */}
       <section className="space-y-4">
         <h3 className="text-base font-semibold">Current Interests</h3>
-        {(['class', 'department', 'athletics', 'club'] as const).map((type) => {
-          const items = allInterests.filter((i) => i.type === type && userInterestIds.includes(i.id))
-          if (items.length === 0) return null
-          const label = { class: 'Classes', department: 'Departments', athletics: 'Athletics', club: 'Clubs' }[type]
-          return (
-            <div key={type} className="space-y-2">
-              <h4 className="text-sm font-medium">{label}</h4>
-              <div className="flex flex-wrap gap-2">
-                {items.map((item) => (
-                  <Badge key={item.id}>
-                    <X className="h-3.5 w-3.5 cursor-pointer" onClick={() => toggleInterest(item.id)} />
-                    {item.name}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )
-        })}
-        {userInterestIds.length === 0 && (
+        {userInterestIds.length === 0 ? (
           <p className="text-sm text-muted-foreground">No interests added yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {allInterests
+              .filter((i) => userInterestIds.includes(i.id))
+              .map((item) => (
+                <Badge key={item.id} className="gap-1">
+                  <button type="button" onClick={() => removeInterest(item.id)}>
+                    <X className="h-3 w-3" />
+                  </button>
+                  {item.formatted_name}
+                </Badge>
+              ))}
+          </div>
         )}
 
-        <Dialog onOpenChange={(open) => { if (!open) setInterestSearch('') }}>
+        <Dialog open={interestDialogOpen} onOpenChange={(open) => { if (!open) setInterestDialogOpen(false) }}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" onClick={openInterestDialog}>
               <Plus className="h-4 w-4" />
               Add interests
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add interests</DialogTitle>
+          <DialogContent className="max-w-md flex flex-col gap-0 p-0">
+            <DialogHeader className="px-6 pt-6 pb-4">
+              <DialogTitle>Edit interests</DialogTitle>
             </DialogHeader>
-            <Input
-              placeholder="Search classes, clubs, sports..."
-              value={interestSearch}
-              onChange={(e) => setInterestSearch(e.target.value)}
-              autoFocus
-            />
-            <div className="overflow-y-auto max-h-96 -mx-6 px-6 space-y-1">
-              {allInterests
-                .filter(({ name }) => name.toLowerCase().includes(interestSearch.toLowerCase()))
-                .map((interest) => {
-                  const added = userInterestIds.includes(interest.id)
-                  return (
-                    <button
-                      key={interest.id}
-                      type="button"
-                      onClick={() => toggleInterest(interest.id)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-md text-sm hover:bg-accent transition-colors text-left"
-                    >
-                      <div>
-                        <span>{interest.name}</span>
-                        <span className="ml-2 text-xs text-muted-foreground capitalize">{interest.type}</span>
-                      </div>
-                      {added && <span className="text-xs text-muted-foreground shrink-0">Added</span>}
-                    </button>
+            <div className="px-6 pb-3">
+              <Input
+                placeholder="Search departments, clubs, sports..."
+                value={interestSearch}
+                onChange={(e) => setInterestSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="overflow-y-auto flex-1 max-h-96 border-y">
+              {interestSearch ? (
+                allInterests
+                  .filter(({ formatted_name, name }) =>
+                    formatted_name.toLowerCase().includes(interestSearch.toLowerCase()) ||
+                    name.toLowerCase().includes(interestSearch.toLowerCase())
                   )
-                })}
-              {allInterests.length === 0 && (
-                <p className="px-3 py-4 text-sm text-muted-foreground text-center">No interests available</p>
+                  .sort((a, b) => a.formatted_name.localeCompare(b.formatted_name))
+                  .map((interest) => (
+                    <InterestRow key={interest.id} interest={interest} selected={draftInterestIds.includes(interest.id)} onToggle={toggleDraftInterest} />
+                  ))
+              ) : (
+                GROUPS.map((group) => {
+                  const items = allInterests
+                    .filter((i) => i.groups?.includes(group))
+                    .sort((a, b) => a.formatted_name.localeCompare(b.formatted_name))
+                  if (items.length === 0) return null
+                  const collapsed = collapsedDialogGroups.has(group)
+                  const selectedCount = items.filter((i) => draftInterestIds.includes(i.id)).length
+                  return (
+                    <div key={group}>
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-6 py-2 bg-muted text-sm font-medium text-left sticky top-0"
+                        onClick={() => setCollapsedDialogGroups((prev) => {
+                          const next = new Set(prev)
+                          next.has(group) ? next.delete(group) : next.add(group)
+                          return next
+                        })}
+                      >
+                        {collapsed ? <ChevronRight className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
+                        {group}
+                        {selectedCount > 0 && (
+                          <span className="text-xs text-muted-foreground font-normal">({selectedCount})</span>
+                        )}
+                      </button>
+                      {!collapsed && items.map((interest) => (
+                        <InterestRow key={interest.id} interest={interest} selected={draftInterestIds.includes(interest.id)} onToggle={toggleDraftInterest} indent />
+                      ))}
+                    </div>
+                  )
+                })
               )}
+              {allInterests.length === 0 && (
+                <p className="px-6 py-4 text-sm text-muted-foreground text-center">No interests available</p>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-2 px-6 py-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const nonEmptyGroups = GROUPS.filter(g => allInterests.some(i => i.groups?.includes(g)))
+                  const allCollapsed = nonEmptyGroups.every(g => collapsedDialogGroups.has(g))
+                  setCollapsedDialogGroups(allCollapsed ? new Set() : new Set(nonEmptyGroups))
+                }}
+              >
+                {GROUPS.filter(g => allInterests.some(i => i.groups?.includes(g))).every(g => collapsedDialogGroups.has(g))
+                  ? 'Expand all'
+                  : 'Collapse all'}
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setInterestDialogOpen(false)}>Cancel</Button>
+                <Button onClick={saveInterests}>Save</Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

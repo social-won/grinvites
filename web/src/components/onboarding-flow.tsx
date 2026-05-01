@@ -213,7 +213,7 @@ export default function OnboardingFlow() {
 
                   return (
                     <div key={groupName}>
-                      <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-b sticky top-0">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-muted border-b sticky top-0">
                         <Checkbox
                           checked={someSelected ? "indeterminate" : allSelected}
                           onCheckedChange={() => toggleGroup(groupName)}
