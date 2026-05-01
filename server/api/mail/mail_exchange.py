@@ -119,6 +119,23 @@ class MailServer:
         except:
             return False
 
+    def is_smtp_server_live(self, timeout: int = 5) -> bool:
+
+        if not MailServer._is__mail_port(self.port):
+            return False
+        try:
+            if self.port == 465:
+                smtp = smtplib.SMTP_SSL(self.hostname, self.port, timeout=timeout)
+            else:
+                smtp = smtplib.SMTP(self.hostname, self.port, timeout=timeout)
+                smtp.starttls()
+
+            with smtp:
+                response_code, _ = smtp.noop()
+                return 200 <= response_code < 300
+        except:
+            return False
+
     @staticmethod
     def _get_hostname_ip_address(hostname: str) -> str:
         return socket.gethostbyname(hostname)
@@ -126,7 +143,7 @@ class MailServer:
     def send_message(
         self,
         msg: MIMEMultipart | MIMEText | MIMEBase,
-        recipient_address: MailAddress,
+        recipient_addresses: list[MailAddress],
         sender_address: MailAddress,
         user: str,
         password: str,
@@ -141,7 +158,7 @@ class MailServer:
             with smtp:
                 smtp.login(user, password)
                 smtp.sendmail(
-                    sender_address.email, recipient_address.email, msg.as_string()
+                    sender_address.email, [r.email for r in recipient_addresses], msg.as_string()
                 )
 
         except smtplib.SMTPHeloError:

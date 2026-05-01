@@ -1,4 +1,4 @@
-from MailAddress import MailAddress as MailAddress
+from mail_exchange import MailAddress as MailAddress
 import unittest
 
 

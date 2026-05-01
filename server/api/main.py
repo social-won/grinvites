@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-#import user
+
+# import user
 from pydantic import BaseModel
 from typing import List
 import sqlite3
+
 
 class User(BaseModel):
     id: int
@@ -12,11 +14,13 @@ class User(BaseModel):
     calendar_type: str
     prefer_notify: int
 
+
 class UserCreate(BaseModel):
     email: str
     display_name: str
     calendar_type: str
     prefer_notify: int
+
 
 class Event(BaseModel):
     id: int
@@ -28,10 +32,12 @@ class Event(BaseModel):
     location: str
     interests: str
 
+
 class Interests(BaseModel):
     id: int
     name: str
     type: str
+
 
 class UserInterestsUpdate(BaseModel):
     interest_ids: List[int]
@@ -53,27 +59,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.post("/users")
 async def create_user(user_data: UserCreate):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    cursor.execute('''
+    cursor.execute(
+        """
         INSERT INTO users (email, display_name, calendar_type, prefer_notify)
         VALUES (?, ?, ?, ?)
-    ''', (user_data.email, user_data.display_name, user_data.calendar_type, user_data.prefer_notify))
-    
+    """,
+        (
+            user_data.email,
+            user_data.display_name,
+            user_data.calendar_type,
+            user_data.prefer_notify,
+        ),
+    )
+
     user_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    
+
     # Return the created user with the generated ID
     return User(
         id=user_id,
         email=user_data.email,
         display_name=user_data.display_name,
         calendar_type=user_data.calendar_type,
-        prefer_notify=user_data.prefer_notify
+        prefer_notify=user_data.prefer_notify,
     )
+
 
 # I'm not sure how many of these endpoints should be for a general user and for the current user, if we even need the general case?
 
@@ -86,6 +102,7 @@ async def create_user(user_data: UserCreate):
 # @app.get("/users/me")
 # def read_me(current_user: User = Depends(get_current_user)):
 #     return current_user
+
 
 # Get user object
 @app.get("/users/{user_id}")
@@ -105,13 +122,22 @@ async def read_user(user_id):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
 # Update user object
 @app.put("/users/{user_id}")
 async def update_user(user_id, user_data: UserCreate):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET email=?, display_name=?, calendar_type=?, prefer_notify=? WHERE id=?", 
-                   (user_data.email, user_data.display_name, user_data.calendar_type, user_data.prefer_notify, user_id))
+    cursor.execute(
+        "UPDATE users SET email=?, display_name=?, calendar_type=?, prefer_notify=? WHERE id=?",
+        (
+            user_data.email,
+            user_data.display_name,
+            user_data.calendar_type,
+            user_data.prefer_notify,
+            user_id,
+        ),
+    )
     conn.commit()
     conn.close()
     return User(
@@ -119,8 +145,9 @@ async def update_user(user_id, user_data: UserCreate):
         email=user_data.email,
         display_name=user_data.display_name,
         calendar_type=user_data.calendar_type,
-        prefer_notify=user_data.prefer_notify
+        prefer_notify=user_data.prefer_notify,
     )
+
 
 # Get user interests
 @app.get("/users/{user_id}/interests")
@@ -138,20 +165,23 @@ async def read_user_interests(user_id):
         raise HTTPException(status_code=404, detail="User not found")
     return interests
 
+
 # Update user interests
 @app.put("/users/{user_id}/interests")
 async def update_user_interests(user_id: int, interests_data: UserInterestsUpdate):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     # Delete existing interests for the user
-    #cursor.execute("DELETE FROM user_interests WHERE user_id = ?", (user_id,))
+    # cursor.execute("DELETE FROM user_interests WHERE user_id = ?", (user_id,))
     # Insert new interests
     for interest_id in interests_data.interest_ids:
-        cursor.execute("INSERT INTO user_interests (user_id, interest_id) VALUES (?, ?)", (user_id, interest_id))
+        cursor.execute(
+            "INSERT INTO user_interests (user_id, interest_id) VALUES (?, ?)",
+            (user_id, interest_id),
+        )
     conn.commit()
     conn.close()
     return {"message": "User interests updated successfully"}
-
 
 
 # Get event object
@@ -170,12 +200,14 @@ async def read_event(event_id):
         raise HTTPException(status_code=404, detail="Event not found")
     return event
 
+
 # # Get events <--- this one I imagine is going to be pretty complex query params
 # @app.get("/events")
 # async def read_events():
 #     pass
 
-#gets root
+
+# gets root
 @app.get("/")
 async def root():
     return {"message": "Account Created!"}
