@@ -1,3 +1,4 @@
+from __future__ import annotations
 from iso639 import Lang, is_language
 from iso639.exceptions import InvalidLanguageValue
 from datetime import datetime, timezone, timedelta
