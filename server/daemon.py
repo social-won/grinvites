@@ -8,8 +8,6 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
-# Make the mail library's local imports resolvable
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "api", "mail"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "api"))
 
 from api.db_functions import get_events_within_two_weeks, get_users_for_event_full
@@ -88,7 +86,7 @@ def _send_event_invite(event: dict, users, config: Config, server: MailServer) -
     duration = _parse_duration(event["start_time"], event.get("end_time"))
 
     organizer = vCalAddress(config.grinvites_mail_address)
-    prod_id = ProdID(*config.grinvites_prod_id, language="English")
+    prod_id = ProdID(*config.grinvites_prod_id)
 
     ical_event = RequestEvent.grinvites_event(
         uid=uuid.uuid4(),
@@ -145,9 +143,7 @@ def _dispatch_cycle(config: Config, server: MailServer) -> None:
         users = get_users_for_event_full(event["id"])
         if not users:
             continue
-        scheduled_users = [u for u in users if _is_scheduled_now(u.invite_times)]
-        if not scheduled_users:
-            continue
+        scheduled_users = users  # demo: ignore invite_time schedule, send to all matched users
         matches += len(scheduled_users)
         _send_event_invite(event, scheduled_users, config, server)
 

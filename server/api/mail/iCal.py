@@ -9,10 +9,10 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email.utils import formataddr
 from email import encoders
-from enums import METHOD
-from events import RequestEvent
-from utils import get_enum_value
-from config import Config
+from .enums import METHOD
+from .events import RequestEvent
+from .utils import get_enum_value
+from .config import Config
 
 class ICSFile:
 

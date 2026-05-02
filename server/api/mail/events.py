@@ -3,7 +3,7 @@ from icalendar.error import InvalidCalendar
 from datetime import date, datetime, timedelta, timezone
 from typing import Sequence
 from lorem_text import lorem
-from config import Config
+from .config import Config
 import uuid
 
 

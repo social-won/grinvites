@@ -13,8 +13,8 @@ from email_validator import validate_email as validate_email
 from icalendar.prop.cal_address import vCalAddress
 from icalendar.enums import CUTYPE, ROLE, PARTSTAT
 from iso639 import Lang
-from utils import get_enum_value, get_iso639_language_name
-from error import (
+from .utils import get_enum_value, get_iso639_language_name
+from .error import (
     InvalidCalendarAddress,
     UndeliverableMailAddress,
     invalid_parameter_error_message,
