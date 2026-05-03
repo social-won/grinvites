@@ -4,9 +4,8 @@ import os
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-#import user
+# import user
 from pydantic import BaseModel
-from typing import List
 import sqlite3
 from datetime import datetime
 
@@ -14,28 +13,43 @@ from contextlib import asynccontextmanager
 import asyncio
 
 from api.sql_init import initialize_database
-from models import User, UserInterestsUpdate
+from models import User, UserInterestsUpdate, UserUpdate
 from api.db_functions import *
-from api.scraper import scrape_events
+from api.scraper import scrape_events, test_scraping
+from api.interests import populate_interests
+
 
 async def my_daemon():
     print("hi!!!")
 
     while True:
+
         # check for updates, send emails, etc.
         print("hello!", datetime.now().isoformat())
         await asyncio.sleep(60)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if os.getenv("E2E_TESTING"):
+        print("Initializing database")
         initialize_database()
+        populate_interests()
         scrape_events()
-        
+        # test_scraping()
+
     task = asyncio.create_task(my_daemon())
     yield
     task.cancel()
 
+if os.getenv("RESET_USERS"):
+    print("Reseting users")
+    initialize_database()
+    populate_interests()
+    scrape_events()
+elif os.getenv("RESET_EVENTS"):
+    scrape_events()
+# test_scraping()
 # Written following https://fastapi.tiangolo.com/tutorial/
 app = FastAPI(lifespan=lifespan)
 
@@ -52,13 +66,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.post("/users", status_code=201)
 async def create_user(user_data: User):
     try:
-       add_user(user_data)
+        add_user(user_data)
     except sqlite3.OperationalError as e:
-      raise HTTPException(status_code=500, detail=str(e))
-    
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # I'm not sure how many of these endpoints should be for a general user and for the current user, if we even need the general case?
 
@@ -76,23 +91,34 @@ async def create_user(user_data: User):
 @app.get("/users/{user_id}")
 async def read_user(user_id):
     user = get_user(user_id)
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
 
 # Update user object
+
+
 @app.put("/users/{user_id}")
-async def update_user(user_id, user_data: User):
-    #TODO: Refactor this to db_functions.py
+async def update_user(user_id: str, user_data: UserUpdate):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET email=?, display_name=?, invite_times=? WHERE id=?", 
-                   (user_data.email, user_data.display_name, json.dumps(user_data.invite_times), user_id))
+    if user_data.email is not None:
+        cursor.execute("UPDATE users SET email=? WHERE id=?",
+                       (user_data.email, user_id))
+    if user_data.display_name is not None:
+        cursor.execute("UPDATE users SET display_name=? WHERE id=?",
+                       (user_data.display_name, user_id))
+    if user_data.invite_times is not None:
+        cursor.execute("UPDATE users SET invite_times=? WHERE id=?",
+                       (json.dumps(user_data.invite_times), user_id))
+    if user_data.theme is not None:
+        cursor.execute("UPDATE users SET theme=? WHERE id=?",
+                       (user_data.theme, user_id))
     conn.commit()
     conn.close()
-    
+
 
 # Get user interests
 @app.get("/users/{user_id}/interests")
@@ -100,13 +126,12 @@ async def read_user_interests(user_id):
     interests = get_user_interests(user_id)
     if not interests:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Convert to list of dicts
-    column_names = ["id", "name", "type"]
-    interests_list = [dict(zip(column_names, row)) for row in interests]
-    return interests_list
+
+    return interests
 
 # Update user interests
+
+
 @app.put("/users/{user_id}/interests")
 async def update_user_interests(user_id: str, interests_data: UserInterestsUpdate):
     try:
@@ -126,7 +151,8 @@ async def update_user_interests(user_id: str, interests_data: UserInterestsUpdat
                 tuple(interests_data.interest_ids),
             )
             valid_ids = {row[0] for row in cursor.fetchall()}
-            missing_ids = [i for i in interests_data.interest_ids if i not in valid_ids]
+            missing_ids = [
+                i for i in interests_data.interest_ids if i not in valid_ids]
             if missing_ids:
                 raise HTTPException(
                     status_code=400,
@@ -134,7 +160,8 @@ async def update_user_interests(user_id: str, interests_data: UserInterestsUpdat
                 )
 
         # Delete existing interests for this user
-        cursor.execute("DELETE FROM user_interests WHERE user_id = ?", (user_id,))
+        cursor.execute(
+            "DELETE FROM user_interests WHERE user_id = ?", (user_id,))
 
         # Add new interests
         for interest_id in interests_data.interest_ids:
@@ -150,10 +177,6 @@ async def update_user_interests(user_id: str, interests_data: UserInterestsUpdat
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/interests")
-async def read_interests():
-    return get_interests()
-
 # Get user events
 @app.get("/users/{user_id}/events")
 async def get_user_events(user_id: str):
@@ -161,7 +184,7 @@ async def get_user_events(user_id: str):
     user = get_user(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Get events that match user's interests
     conn = get_db()
     cursor = conn.cursor()
@@ -174,17 +197,24 @@ async def get_user_events(user_id: str):
     ''', (user_id,))
     events = cursor.fetchall()
     conn.close()
-    
+
     if not events:
         return []
-    
+
     # Convert to list of dicts
-    column_names = ["id", "creation_time_stamp", "title", "start_time", "end_time", "location", "summary", "categories", "tags", "org_name", "frequency"]
+    column_names = ["id", "creation_time_stamp", "title", "start_time", "end_time",
+                    "location", "summary", "categories", "tags", "org_name", "frequency"]
     events_list = [dict(zip(column_names, row)) for row in events]
     return events_list
 
 
+@app.get("/interests")
+async def read_interests():
+    return get_interests()
+
 # Get event object
+
+
 @app.get("/events/{event_id}")
 async def read_event(event_id):
     conn = get_db()
@@ -205,7 +235,9 @@ async def read_event(event_id):
 # async def read_events():
 #     pass
 
-#gets root
+# gets root
+
+
 @app.get("/")
 async def root():
-    return {"message": "Account Created!"}
+    return {"message": "Hi Mom!"}

@@ -1,11 +1,13 @@
 import supabase from "./supabase";
-import { GrinvitesUser } from "./types";
+import { ApiEvent, GrinvitesUser, Interest } from "./types";
 
 const API_ENDPOINT = "http://127.0.0.1:8000";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+type ApiResponse<T> = { status: number; data: T | null };
 
 async function authHeaders(): Promise<Record<string, string>> {
     const { data: { session } } = await supabase.auth.getSession();
@@ -15,11 +17,9 @@ async function authHeaders(): Promise<Record<string, string>> {
     };
 }
 
-type ApiResponse<T> = { status: number; data: T | null };
 
 async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
-        console.log(options?.method, path);
 
         const headers = await authHeaders();
         const response = await fetch(`${API_ENDPOINT}${path}`, {
@@ -83,11 +83,31 @@ export const getUserSchedule = async (userId: string): Promise<ApiResponse<{
     };
 };
 
+export const updateUserDisplayName = async (
+    userId: string,
+    display_name: string
+): Promise<ApiResponse<null>> => {
+    return apiFetch(`/users/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({ display_name }),
+    });
+};
+
+export const updateUserTheme = async (
+    userId: string,
+    theme: string,
+): Promise<ApiResponse<null>> => {
+    return apiFetch(`/users/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({ theme }),
+    });
+};
+
 export const updateUserSchedule = async (
     userId: string,
     inviteTimes: Record<string, string>,
 ): Promise<ApiResponse<null>> => {
-    return apiFetch(`/users/${userId}/schedule`, {
+    return apiFetch(`/users/${userId}`, {
         method: "PUT",
         body: JSON.stringify({ invite_times: inviteTimes }),
     });
@@ -96,8 +116,6 @@ export const updateUserSchedule = async (
 // ---------------------------------------------------------------------------
 // Interests
 // ---------------------------------------------------------------------------
-
-export type Interest = { id: number; name: string; type: string };
 
 export const getInterests = async (): Promise<ApiResponse<Interest[]>> => {
     return apiFetch<Interest[]>("/interests");
@@ -118,17 +136,6 @@ export const updateUserInterests = async (userId: string, interestIds: number[])
 // Events
 // ---------------------------------------------------------------------------
 
-export type ApiEvent = {
-    id: number;
-    title: string;
-    org_name: string | null;
-    description: string | null;
-    start_time: string;
-    end_time: string | null;
-    location: string | null;
-    frequency: string | null;
-};
-
 export const getUserEvents = async (userId: string): Promise<ApiResponse<ApiEvent[]>> => {
     return apiFetch<ApiEvent[]>(`/users/${userId}/events`);
 };
@@ -137,25 +144,25 @@ export const getUserEvents = async (userId: string): Promise<ApiResponse<ApiEven
 // Hardcoded stubs (onboarding — replace once backend serves these)
 // ---------------------------------------------------------------------------
 
-export const classesData = [
-    { id: "ART-101-01", name: "ART-101-01" },
-    { id: "ANT-104-01", name: "ANT-104-01" },
-    { id: "CSC-161-01", name: "CSC-161-01" },
-    { id: "ECN-220-02", name: "ECN-220-02" },
-    { id: "SPN-101-01", name: "SPN-101-01" },
-    { id: "SOC-334-01", name: "SOC-334-01" },
-];
+// export const classesData = [
+//     { id: "ART-101-01", name: "ART-101-01" },
+//     { id: "ANT-104-01", name: "ANT-104-01" },
+//     { id: "CSC-161-01", name: "CSC-161-01" },
+//     { id: "ECN-220-02", name: "ECN-220-02" },
+//     { id: "SPN-101-01", name: "SPN-101-01" },
+//     { id: "SOC-334-01", name: "SOC-334-01" },
+// ];
 
-export const hoursData = [
-    { id: "bear", name: "Bear" },
-    { id: "fitness-center", name: "Fitness center" },
-    { id: "pool", name: "Pool" },
-    { id: "spencer-grill", name: "Spencer Grill" },
-    { id: "dining-hall", name: "Dining Hall" },
-    { id: "academic-building", name: "Academic Building" },
-    { id: "golf-course", name: "Golf Course" }
-];
+// export const hoursData = [
+//     { id: "bear", name: "Bear" },
+//     { id: "fitness-center", name: "Fitness center" },
+//     { id: "pool", name: "Pool" },
+//     { id: "spencer-grill", name: "Spencer Grill" },
+//     { id: "dining-hall", name: "Dining Hall" },
+//     { id: "academic-building", name: "Academic Building" },
+//     { id: "golf-course", name: "Golf Course" }
+// ];
 
-export const interestsData = [
-    { id: "bear", name: "Bear" },
-];
+// export const interestsData = [
+//     { id: "bear", name: "Bear" },
+// ];

@@ -94,7 +94,8 @@ describe("createUser / getUser", () => {
             id: TEST_UID,
             email: `${RUN_ID}@grinnell.edu`,
             display_name: "Test Squirrel",
-            invite_times: {}
+            invite_times: {},
+            theme: "light"
         };
 
         const created = await createUser(user);
@@ -123,26 +124,27 @@ describe("createUser / getUser", () => {
 // Schedule
 // ---------------------------------------------------------------------------
 
-// describe("updateUserInviteSchedule / getUserInviteSchedule", () => {
-//     skip("saves a schedule and reads it back", async () => {
-//         const times = { Mon: "08:00", Wed: "12:00", Fri: "17:00" };
+describe("updateUserInviteSchedule / getUserInviteSchedule", () => {
+    skip("saves a schedule and reads it back", async () => {
+        const times = { Mon: "08:00", Wed: "12:00", Fri: "17:00" };
 
-//         await updateUserSchedule(TEST_UID, times);
+        await updateUserSchedule(TEST_UID, times);
 
-//         const saved = await getUserSchedule(TEST_UID);
-//         expect(saved).not.toBeNull();
-//         expect(saved).toEqual(times);
-//     });
+        const { data } = await getUserSchedule(TEST_UID);
+        
+        expect(data).not.toBeNull();
+        expect(data?.invite_times).toEqual(times);
+    });
 
-//     skip("overwrites a previously saved schedule", async () => {
-//         await updateUserSchedule(TEST_UID, ["Tue"], { Tue: "09:00" });
-//         await updateUserSchedule(TEST_UID, ["Thu"], { Thu: "14:00" });
+    skip("overwrites a previously saved schedule", async () => {
+        await updateUserSchedule(TEST_UID, { Tue: "09:00" });
+        await updateUserSchedule(TEST_UID, { Thu: "14:00" });
 
-//         const saved = await getUserSchedule(TEST_UID);
-//         expect(saved!.invite_days).toEqual(["Thu"]);
-//         expect(saved!.invite_times).toEqual({ Thu: "14:00" });
-//     });
-// });
+        const { data } = await getUserSchedule(TEST_UID);
+        expect(data).not.toBeNull();
+        expect(data?.invite_times).toEqual({ Thu: "14:00" });
+    });
+});
 
 // ---------------------------------------------------------------------------
 // Interests
@@ -151,7 +153,6 @@ describe("createUser / getUser", () => {
 describe("getInterests", () => {
     skip("returns an array of interests", async () => {
         const {status, data } = await getInterests();
-        console.log(data)
         expect(Array.isArray(data)).toBe(true);
         expect(status).toBe(200);
     });
@@ -199,7 +200,7 @@ describe("updateUserInterests / getUserInterests", () => {
 
 describe("getUserEvents", () => {
     skip("returns an array of events for the user", async () => {
-        const {data, status} = await getUserEvents(TEST_UID);
+        const {data} = await getUserEvents(TEST_UID);
         expect(Array.isArray(data)).toBe(true);
     });
 });

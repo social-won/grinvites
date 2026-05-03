@@ -1,11 +1,11 @@
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one level
+
 from api.db_functions import get_db
-import sqlite3
-import os
 
 def initialize_database():
     #connect to the database (or create it if it doesn't exist)
-    path = os.getenv("DB_PATH", "database.db")
-    connection = sqlite3.connect(path)
+    connection = get_db()
     cursor = connection.cursor()
     
     # Temporarily disable FK constraints for initialization
@@ -24,7 +24,8 @@ def initialize_database():
             id TEXT PRIMARY KEY,
             email TEXT NOT NULL UNIQUE,
             display_name TEXT NOT NULL,
-            invite_times TEXT
+            invite_times TEXT,
+            theme TEXT
         )
     ''')
 
@@ -33,7 +34,9 @@ def initialize_database():
         CREATE TABLE IF NOT EXISTS interests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
-            type TEXT
+            formatted_name TEXT NOT NULL,
+            type TEXT,
+            groups TEXT
     )         
     ''')
 
@@ -82,3 +85,6 @@ def initialize_database():
     connection.commit()
     connection.close()
     #print("Database initialized successfully.")
+
+if __name__ == "__main__":
+    initialize_database()

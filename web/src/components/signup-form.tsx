@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -23,9 +23,18 @@ import supabase from "@/lib/supabase"
 import { signupSchema } from "@/lib/utils"
 import { createUser } from "@/lib/api"
 import { SignupFormValues } from "@/lib/types"
+import { useUser } from "@/context/user-context"
 
 export function SignupPage() {
   const navigate = useNavigate()
+  const { user, setUser } = useUser()
+  const justSignedUp = useRef(false)
+
+  useEffect(() => {
+    if (user && !justSignedUp.current) {
+      navigate("/home");
+    }
+  }, [user])
 
   const [page, setPage] = useState(0);
 
@@ -43,7 +52,8 @@ export function SignupPage() {
   const onSubmit = async (values: SignupFormValues) => {
     form.clearErrors()
 
-    const { data, error } = await supabase.auth.signUp({
+    // SUPABASE AUTH sign up   NOT CC
+    supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
@@ -51,27 +61,41 @@ export function SignupPage() {
           display_name: values.name,
         },
       },
-    })
+    }).then(({ data }) => {
 
-    if (error) {
+      if (data.user) {
+        const newUser = {
+          id: data.user.id,
+          email: data.user.email!!,
+          display_name: data.user.user_metadata.display_name,
+          invite_times: {},
+          theme: "light"
+        }
+        // if user is created, make BACKEND API call
+        createUser(newUser).then((({ status }) => {
+          console.log("user created", status);
+
+          if (status == 201) {
+            justSignedUp.current = true
+            setUser(newUser)
+            navigate("/onboarding")
+          } else {
+            console.error("status: ", status)
+            form.setError("password", {
+              type: "server",
+              message: "Unable to create user error code: " + status.toString()
+            })
+            //TODO: Delete user from supabase?
+          }
+        }))
+      }
+    }).catch(error => {
       console.error(error)
       form.setError("password", {
         type: "server",
-        message: error.message || "Unable to sign up",
+        message: error.message || "Unable to register user",
       })
-      return
-    }
-
-    if (data.user) {
-      createUser({
-        id: data.user.id,
-        email: data.user.email!!,
-        display_name: data.user.user_metadata.display_name,
-        invite_times: {}
-      })
-
-      navigate("/onboarding")
-    }
+    })
   }
 
   return (
@@ -222,18 +246,18 @@ function EmailForm({ form, setPage }: { form: UseFormReturn<SignupFormValues>, s
           )}
         />
 
-          <Button 
-            className="w-full"
-            onClick={async (_e) => {
+        <Button
+          className="w-full"
+          onClick={async (_e) => {
             _e.preventDefault();
             const isValid = await form.trigger("email");
             if (isValid) {
               setPage(1);
             }
           }}>Next</Button>
-          <FieldDescription className="text-center">
-            Already have an account? <Link to="/login" className="text-primary hover:underline">Sign in</Link>
-          </FieldDescription>
+        <FieldDescription className="text-center">
+          Already have an account? <Link to="/login" className="text-primary hover:underline">Sign in</Link>
+        </FieldDescription>
       </FieldGroup>
     </form>
   )
