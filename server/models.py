@@ -7,6 +7,7 @@ class User(BaseModel):
       display_name: str
       invite_times: dict[str, str] = {}  # {"Mon": "08:00", "Tues": "12:00"}
       theme: str | None = None         # "light" | "dark" | "system"
+      events_emailed: str | None = None  # JSON string of list of event IDs that have been emailed to the user
 
 
 class Interest(BaseModel):
