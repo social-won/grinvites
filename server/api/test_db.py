@@ -91,6 +91,7 @@ class TestDatabaseFunctions(unittest.TestCase):
         self.assertEqual(events[0][5], 'Location 1')
         self.assertEqual(events[0][6], 'None')
 
+
 if __name__ == '__main__':
     unittest.main()
 

@@ -270,3 +270,33 @@ def get_users_to_email(event_id):
         user_names.append(user_name)
         connection.close()
     return {"emails": user_emails, "names": user_names}
+
+def add_user_events_emailed(event_id):
+    users = get_users_for_event(event_id)
+    connection = get_db()
+    cursor = connection.cursor()
+    event_id_str = str(event_id) + ","
+
+    for user in users:
+        cursor.execute('''
+            INSERT INTO users (events_emailed) VALUES (?) WHERE id = ?
+        ''', (event_id_str, user))
+    connection.commit()
+    connection.close()
+
+def if_user_emailed_for_event(user_id, event_id):
+    users_emailed_events = []
+
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT events_emailed FROM users WHERE id = ?
+    ''', (user_id,))
+    events_emailed = cursor.fetchone()[0]
+    if events_emailed:
+        users_emailed_events = events_emailed.split(",")
+    
+    for event in users_emailed_events:
+        if event == str(event_id):
+            return True
+    return False

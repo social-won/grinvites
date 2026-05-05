@@ -25,7 +25,8 @@ def initialize_database():
             email TEXT NOT NULL UNIQUE,
             display_name TEXT NOT NULL,
             invite_times TEXT,
-            theme TEXT
+            theme TEXT,
+            events_emailed TEXT
         )
     ''')
 
