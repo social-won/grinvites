@@ -139,9 +139,6 @@ def scrape_events():
             #Get id
             id = clean_text(event.get("id"))
 
-            if id in events:
-                continue
-
             # Get title
             title = clean_text(event.get("title"))
 
@@ -182,7 +179,7 @@ def scrape_events():
 
 
             # Create event dictionary and add to list                        
-            events[id] = {
+            events[inserted_count] = {
                 "id": id,
                 "creation_time_stamp": (datetime.now(timezone.utc)).isoformat(),
                 "title": title,
@@ -198,10 +195,11 @@ def scrape_events():
 
             cursor.execute('''
                 INSERT INTO events (
-                    id, creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name
+                    id, event_id, creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
+                inserted_count,
                 id,
                 (datetime.now(timezone.utc)).isoformat(),
                 title,
@@ -253,6 +251,7 @@ def scrape_events():
 #         events_within_30days[event["id"]] = event
 
 #     # Now find frequencies in the filtered events
+      # CHANGE THIS TO STORE COUNTER ID
 #     frequency_dict = dict()
 #     for event in events_within_30days.values():
 #         title = event["title"]
