@@ -87,8 +87,13 @@ def get_user_by_email(user_email):
     connection.close()
     return user
 
+<<<<<<< HEAD
 def get_event_by_id(event_id): 
     connection = get_db()
+=======
+def get_event_by_id(event_id):
+    connection = sqlite3.connect('test_grinvites.db')
+>>>>>>> 389fd4f (random spaces)
     cursor = connection.cursor()
 
     query = '''
@@ -341,31 +346,6 @@ def get_users_for_event(event_id):
 
     connection.close()
     return user_ids
-
-def get_events_within_two_weeks():
-    from datetime import datetime, timezone, timedelta
-    now = datetime.now(timezone.utc)
-    two_weeks = now + timedelta(weeks=2)
-    connection = get_db()
-    cursor = connection.cursor()
-    cursor.execute('''
-        SELECT * FROM events
-        WHERE start_time >= ? AND start_time <= ?
-    ''', (now.isoformat(), two_weeks.isoformat()))
-    rows = cursor.fetchall()
-    column_names = [col[0] for col in cursor.description]
-    connection.close()
-    return [dict(zip(column_names, row)) for row in rows]
-
-def get_users_for_event_full(event_id):
-    """Returns full User objects for all users matched to an event via shared interests."""
-    user_ids = get_users_for_event(event_id)
-    users = []
-    for uid in user_ids:
-        u = get_user(uid)
-        if u:
-            users.append(u)
-    return users
 
 #returns the email and display name in json for all users of a given event
 def get_users_to_email(event_id):

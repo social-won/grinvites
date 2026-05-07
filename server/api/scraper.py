@@ -48,6 +48,7 @@ def get_json_page(page_num):
 
     return requests.get(url).json() 
 
+<<<<<<< HEAD
 def sanitize_name(s: str) -> str:
     s = s.replace('’', '').replace('‘', '').replace("'", '').replace('“', '').replace('”', '')
     s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
@@ -73,6 +74,17 @@ def sanitize_name(s: str) -> str:
 #             ''', (item.name, item.formatted_name, interest_type, json.dumps(item.groups)))
 #         except KeyError:
 #             print(interest, "not found")
+=======
+#adds interest to interest table
+def add_interest(cursor, name, type="organization"):
+    if not name:
+        return
+    name = clean_text(name).lower()
+    cursor.execute('''
+        INSERT OR IGNORE INTO interests (name, type)
+        VALUES (?, ?)
+    ''', (name, type))
+>>>>>>> c53b648 (updated scraper and db to put interests in correct places from events)
 
 #gets the id of an interest
 def get_interest_id(cursor, name):
@@ -113,9 +125,14 @@ def scrape_events():
     # Temporarily disable FK constraints for initialization
     cursor.execute("PRAGMA foreign_keys = OFF")
     cursor.execute("DELETE FROM events")
+<<<<<<< HEAD
     # cursor.execute("DELETE FROM interests")
     cursor.execute("DELETE FROM event_interests")
     cursor.execute("PRAGMA foreign_keys = ON")
+=======
+    cursor.execute("DELETE FROM interests")
+    cursor.execute("DELETE FROM event_interests")
+>>>>>>> c53b648 (updated scraper and db to put interests in correct places from events)
 
     events = {}
 
@@ -218,6 +235,7 @@ def scrape_events():
             event_id = cursor.lastrowid
 
             if org_name:
+<<<<<<< HEAD
                 # add_interest(cursor, org_name)
                 org_name = sanitize_name(clean_html(org_name))
                 interests = org_name.split(", ")
@@ -227,6 +245,10 @@ def scrape_events():
 
                 for interest in interests:
                     add_event_interest(cursor, interest, event_id)
+=======
+                add_interest(cursor, org_name)
+                add_event_interest(cursor, org_name, event_id)
+>>>>>>> c53b648 (updated scraper and db to put interests in correct places from events)
             
             inserted_count += 1
         
@@ -312,6 +334,7 @@ def test_scraping():
         print()
     
     for interest in interests:
+<<<<<<< HEAD
         # print("Interest ID:", interest[0])
         print("Interest Name:", interest[1])
     
@@ -320,6 +343,17 @@ def test_scraping():
     #     print("Interest ID:", event_interest[1])
     #     print("Interest Name:", get_interest_by_id(event_interest[1], interests))
     #     print()
+=======
+        print("Interest ID:", interest[0])
+        print("Interest Name:", interest[1])
+        print()
+    
+    for event_interest in event_interests:
+        print("Event ID:", event_interest[0])
+        print("Interest ID:", event_interest[1])
+        print("Interest Name:", get_interest_by_id(event_interest[1], interests))
+        print()
+>>>>>>> c53b648 (updated scraper and db to put interests in correct places from events)
         
 
 # run manually for testing
