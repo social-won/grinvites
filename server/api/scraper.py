@@ -1,8 +1,8 @@
 import sys
 import os
+from pathlib import Path
 from typing import Any
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one level
 
 import json
 import unicodedata
@@ -13,16 +13,17 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 
 # from sql_init import initialize_database
-from api.db_functions import get_db
+from db_functions import get_db
 from models import Organization
 
 # Source: https://realpython.com/beautiful-soup-web-scraper-python/
 # Source: https://scrapfly.io/blog/posts/web-scraping-with-playwright-and-python
 # Source: https://github.com/seehorne/GetGrinnected
-
+BASE_DIR = Path(__file__).resolve().parent
 JSON_URL = "https://events.grinnell.edu/live/json/events/response_fields/all/paginate"
+INTEREST_FILE = BASE_DIR / "interests.json"
 
-with open("api/interests.json", "r") as file:
+with open(INTEREST_FILE, "r") as file:
     data = json.load(file)
     data = [Organization(**item) for item in data]
     INTERESTS = {item.name: item for item in data}
