@@ -87,13 +87,8 @@ def get_user_by_email(user_email):
     connection.close()
     return user
 
-<<<<<<< HEAD
 def get_event_by_id(event_id): 
     connection = get_db()
-=======
-def get_event_by_id(event_id):
-    connection = sqlite3.connect('test_grinvites.db')
->>>>>>> 389fd4f (random spaces)
     cursor = connection.cursor()
 
     query = '''
