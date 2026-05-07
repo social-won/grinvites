@@ -299,27 +299,27 @@ def test_scraping():
     print("\nFirst 5 events in database:")
     for event in events:
         print("ID:", event[0])
-        print("Created:", event[1])
-        print("Title:", event[2])
-        print("Start:", event[3])
-        print("End:", event[4])
-        print("Location:", event[5])
-        print("Summary:", event[6])
-        print("Categories:", event[7])
-        print("Tags:", event[8])
-        print("Org Name:", event[9])
-        print("Frequency:", event[10])
+        print("\tCreated:", event[1])
+        print("\tTitle:", event[2])
+        print("\tStart:", event[3])
+        print("\tEnd:", event[4])
+        print("\tLocation:", event[5])
+        print("\tSummary:", event[6])
+        print("\tCategories:", event[7])
+        print("\tTags:", event[8])
+        print("\tOrg Name:", event[9])
+        print("\tFrequency:", event[10])
         print()
     
     for interest in interests:
         # print("Interest ID:", interest[0])
         print("Interest Name:", interest[1])
     
-    # for event_interest in event_interests:
-    #     print("Event ID:", event_interest[0])
-    #     print("Interest ID:", event_interest[1])
-    #     print("Interest Name:", get_interest_by_id(event_interest[1], interests))
-    #     print()
+    for event_interest in event_interests:
+        print("Event ID:", event_interest[0])
+        print("Interest ID:", event_interest[1])
+        print("Interest Name:", get_interest_by_id(event_interest[1], interests))
+        print()
         
 
 # run manually for testing
