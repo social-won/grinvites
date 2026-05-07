@@ -8,8 +8,8 @@ import unicodedata
 import requests
 import sqlite3
 from bs4 import BeautifulSoup
-from datetime import datetime, timezone
-# from sql_init import initialize_database
+from datetime import datetime, timedelta, timezone
+from sql_init import initialize_database
 from api.db_functions import get_db
 from models import Organization
 
@@ -105,16 +105,15 @@ def get_interest_by_id(interest_id, interests):
 # Scrape events from the LiveWhale JSON endpoint
 def scrape_events():
     print("scraping!")
-    # initialize_database()
+    initialize_database()
 
     connection = get_db()
     cursor = connection.cursor()
 
     # Temporarily disable FK constraints for initialization
     cursor.execute("PRAGMA foreign_keys = OFF")
-    cursor.execute("DELETE FROM events")
     # cursor.execute("DELETE FROM interests")
-    cursor.execute("DELETE FROM event_interests")
+    cursor.execute("DROP TABLE IF EXISTS event_interests")
     cursor.execute("PRAGMA foreign_keys = ON")
 
     events = {}
@@ -190,7 +189,7 @@ def scrape_events():
                 "categories": categories,
                 "tags": tags,
                 "org_name": org_name,
-                "frequency": None
+                "occurances": None
             }
 
             cursor.execute('''
@@ -210,7 +209,7 @@ def scrape_events():
                 categories,
                 tags,
                 org_name
-                # event["frequency"] # Will include soon
+                # event["occurances"] # Will include soon
             ))
 
             event_id = cursor.lastrowid
@@ -231,42 +230,60 @@ def scrape_events():
     connection.commit()
     connection.close()
 
+    print("Events couont before occurance detection:", len(events))
+    occurance_finder(events)
+    print("Events count after occurance detection:", len(events))
+
     print("Inserted " + str(inserted_count) + " events into the database.")
 
     return events
-# Helper function to find frequency of events with the same title.
+
+# Helper function to find occurances of events with the same title.
 # Limits search to events within the next month to avoid counting events that are far apart in time and not actually recurring. 
-# Updates the original events list with frequency information for recurring events.
-# def frequency_finder(events):
-#     # Filter events to only those from now till 30 days from now
-#     now = datetime.now()
-#     month_start = now
-#     month_end = now + timedelta(days=30)
+# Updates the original events list with occurance information for multiple-occuring events.
+def occurance_finder(events):
+    # Filter events to only those from now till 30 days from now
+    now = datetime.now()
+    month_start = now
+    month_end = now + timedelta(days=30)
     
-#     events_within_30days = {}
-#     for event in events.values():
-#         start_dt = datetime.fromisoformat(event["start_time"])
-#         if start_dt > month_end:
-#             break
-#         events_within_30days[event["id"]] = event
+    events_within_30days = {}
+    for event in events.values():
+        start_dt = datetime.fromisoformat(event["start_time"])
+        if start_dt > month_end:
+            break
+        events_within_30days[event["id"]] = event
 
-#     # Now find frequencies in the filtered events
-      # CHANGE THIS TO STORE COUNTER ID
-#     frequency_dict = dict()
-#     for event in events_within_30days.values():
-#         title = event["title"]
-#         if title not in frequency_dict:
-#             frequency_dict[title] = []
-#             frequency_dict[title].append(event.get("id"))
-#         else:
-#             frequency_dict[title].append(event.get("id"))
+    # Now find frequencies in the filtered events
+    frequency_dict = dict()
+    for event in events_within_30days.values():
+        title = event["title"]
+        if title not in frequency_dict:
+            frequency_dict[title] = []
+            frequency_dict[title].append(event.get("id"))
+        else:
+            frequency_dict[title].append(event.get("id"))
 
-#     # Update the original events list with frequencies for recurring events
-#     for title in frequency_dict:
-#         if len(frequency_dict[title]) > 2:
+    # Update the original events list with frequencies for recurring events
+    for title in frequency_dict:
+        if len(frequency_dict[title]) > 1:
+            first_id = frequency_dict[title][0]
+            events[first_id]["occurances"] = []
+            first = False
+            for id in frequency_dict[title]:
+                if first == False:
+                    events[first_id]["occurances"].append({
+                        "start": events[id]["start_time"],
+                        "end": events[id]["end_time"]
+                    })
+                    first = True
+                else:
+                    events[first_id]["occurances"].append({
+                        "start": events[id]["start_time"],
+                        "end": events[id]["end_time"]
+                    })
+                    events.pop(id, None)
 
-#             for id in frequency_dict[title]:
-#                 events[id]["frequency"] = 
 
 # Tests if events were successfully inserted into the database by fetching and printing the first 5 events.
 def test_scraping():
