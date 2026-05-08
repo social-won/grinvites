@@ -6,10 +6,10 @@ import {
   ChevronRight,
   Check,
   Mail,
-  SquareArrowOutUpRight,
   ChevronDown,
   ChevronRight as ChevronRightIcon,
 } from "lucide-react";
+import supabase from "@/lib/supabase";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -33,10 +33,9 @@ function interestsForGroup(groupName: GroupName, interests: Interest[]): Interes
 // ---------------------------------------------------------------------------
 
 const steps = [
-  // { id: 0, title: "Class Schedule", description: "Select your classes" },
-  { id: 0, title: "Interests", description: "Select organizations to follow" },
-  { id: 1, title: "Invite Schedule", description: "Configure when to send invites" },
-  { id: 2, title: "Email Setup", description: "Add Grinvites as a known sender" },
+  { id: 0, title: "Confirm Email", description: "Verify your email address" },
+  { id: 1, title: "Interests", description: "Select organizations to follow" },
+  { id: 2, title: "Invite Schedule", description: "Configure when to send invites" },
   { id: 3, title: "First Invite", description: "Check your calendar" },
 ];
 
@@ -52,7 +51,8 @@ export default function OnboardingFlow() {
     inviteSchedule: {} as Record<string, string>,
   });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(GROUPS));
-  const [emailOpened, setEmailOpened] = useState(false);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const [interestsArray, setInterestsArray] = useState<Interest[]>([]);
 
 
@@ -69,29 +69,41 @@ export default function OnboardingFlow() {
   }, [])
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || initialized) return;
     getUserInterests(user.id).then(({ data }) => {
       if (data) setFormData(prev => ({ ...prev, selectedOrgs: data.map(i => i.id) }));
     });
     getUserSchedule(user.id).then(({ data }) => {
       if (data) setFormData(prev => ({ ...prev, inviteSchedule: data.invite_times }));
     });
+    setInitialized(true);
   }, [user]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      console.log(data);
+
+      if (data.user?.email_confirmed_at) setEmailConfirmed(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user.email_confirmed_at) setEmailConfirmed(true);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
 
 
 
   const isNextDisabled = () => {
-    if (currentStep === 1) return Object.keys(formData.inviteSchedule).length === 0;
-    if (currentStep === 2) return !emailOpened;
+    if (currentStep === 0) return !emailConfirmed;
+    if (currentStep === 2) return Object.keys(formData.inviteSchedule).length === 0;
     return false;
   };
 
   const handleNext = async () => {
-    if (currentStep === 0 && user) {
+    if (currentStep === 1 && user) {
       await updateUserInterests(user.id, formData.selectedOrgs);
-    }
-    else if (currentStep === 1 && user) {
+    } else if (currentStep === 2 && user) {
       await updateUserSchedule(user.id, formData.inviteSchedule);
     }
     if (currentStep < 3) {
@@ -135,7 +147,36 @@ export default function OnboardingFlow() {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: {
+      case 0:
+        return (
+          <div className="space-y-6 w-full">
+            <CardHeader className="px-0 pt-0">
+              <CardTitle>Confirm your email</CardTitle>
+              <CardDescription>
+                We sent a confirmation link to <strong>{user?.email}</strong>. Click it to continue.
+              </CardDescription>
+            </CardHeader>
+
+            <div className="flex flex-col items-center gap-4">
+              <div className="rounded-full bg-primary/10 p-6">
+                <Mail className="h-10 w-10 text-primary" />
+              </div>
+              {emailConfirmed
+                ? <p className="text-sm font-medium text-green-600">Email confirmed!</p>
+                : <>
+                  <p className="text-sm text-muted-foreground">Waiting for confirmation...</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => { supabase.auth.resend({ type: "signup", email: user?.email ?? "" }) }}
+                  >
+                    Resend confirmation email
+                  </Button>
+                </>}
+            </div>
+          </div>
+        );
+
+      case 1: {
         const search = formData.orgSearch.toLowerCase();
         const isSearching = search.length > 0;
 
@@ -163,7 +204,6 @@ export default function OnboardingFlow() {
               />
               <Button
                 variant="outline"
-                // size="sm"
                 className="shrink-0"
                 onClick={() => {
                   const allGroupNames = GROUPS.filter(g => interestsForGroup(g, interestsArray).length > 0);
@@ -193,9 +233,6 @@ export default function OnboardingFlow() {
                       />
                       <div className="flex-1 min-w-0">
                         <span className="text-sm">{interest.formatted_name}</span>
-                        {/* <span className="ml-2 text-xs text-muted-foreground">
-                          {interest.groups?.join(", ")}
-                        </span> */}
                       </div>
                     </div>
                   ))
@@ -273,7 +310,7 @@ export default function OnboardingFlow() {
         );
       }
 
-      case 1:
+      case 2:
         return (
           <div className="space-y-6 w-full">
             <CardHeader className="px-0 pt-0">
@@ -298,38 +335,6 @@ export default function OnboardingFlow() {
                 ))}
               </p>
             )}
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6 w-full">
-            <CardHeader className="px-0 pt-0">
-              <CardTitle>Make Grinvites a trusted sender</CardTitle>
-              <CardDescription>
-                Send the email below to us so invites don't end up in spam.
-              </CardDescription>
-            </CardHeader>
-
-            <div className="flex flex-col items-center gap-4">
-              <div className="rounded-full bg-primary/10 p-6">
-                <Mail className="h-10 w-10 text-primary" />
-              </div>
-              <Button
-                size="lg"
-                onClick={() => {
-                  const subject = encodeURIComponent("Ready to start getting invites");
-                  const body = encodeURIComponent(
-                    "Hi Grinvites,\n\nI'm ready to start getting invites!\n\nThanks"
-                  );
-                  window.location.href = `mailto:squirrel@grinvites.app?subject=${subject}&body=${body}`;
-                  setEmailOpened(true);
-                }}
-              >
-                <SquareArrowOutUpRight className="h-4 w-4" />
-                Open email draft
-              </Button>
-            </div>
           </div>
         );
 

@@ -60,6 +60,7 @@ export function SignupPage() {
         data: {
           display_name: values.name,
         },
+        emailRedirectTo: `${window.location.origin}/onboarding`
       },
     }).then(({ data }) => {
 
@@ -102,9 +103,9 @@ export function SignupPage() {
     <div className="flex min-h-screen flex-col gap-6 p-4 items-center justify-center">
       <Card className="w-full max-w-xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">{page == 1 ? "Create your account" : "Connect your email to Grinvites"}</CardTitle>
+          <CardTitle className="text-xl">{page == 1 ? "Create your account" : "Connect your calendar email to Grinvites"}</CardTitle>
           <CardDescription>
-            {page == 1 ? "Enter your details below to create your account" : "Enter the email you want to connect"}
+            {page == 1 ? "Enter your details below to create your account" : "Enter the email you use for your calendar"}
           </CardDescription>
         </CardHeader>
         <CardContent>
