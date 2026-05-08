@@ -20,12 +20,12 @@ from api.interests import populate_interests
 
 
 async def my_daemon():
-    print("hi!!!")
+    # print("hi!!!")
 
     while True:
 
         # check for updates, send emails, etc.
-        print("hello!", datetime.now().isoformat())
+        # print("hello!", datetime.now().isoformat())
         await asyncio.sleep(60)
 
 
@@ -42,13 +42,9 @@ async def lifespan(app: FastAPI):
     yield
     task.cancel()
 
-if os.getenv("RESET_USERS"):
-    print("Reseting users")
-    initialize_database()
-    populate_interests()
-    scrape_events()
-elif os.getenv("RESET_EVENTS"):
-    scrape_events()
+initialize_database()
+populate_interests()
+scrape_events()
 # test_scraping()
 # Written following https://fastapi.tiangolo.com/tutorial/
 app = FastAPI(lifespan=lifespan)
@@ -124,7 +120,7 @@ async def update_user(user_id: str, user_data: UserUpdate):
 @app.get("/users/{user_id}/interests")
 async def read_user_interests(user_id):
     interests = get_user_interests(user_id)
-    if not interests:
+    if interests is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     return interests
