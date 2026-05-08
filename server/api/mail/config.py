@@ -28,3 +28,5 @@ class Config(BaseSettings):
     grinnell_college_address : str
 
     model_config = SettingsConfigDict(env_file=f'{Path(file_path).joinpath('.env')}')
+
+config = Config() # type: ignore[call-arg]

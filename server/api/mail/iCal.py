@@ -24,6 +24,15 @@ class ICSFile:
         version: int = 2,
         calendar_scale: str = "GREGORIAN",
     ):
+        """ICS file constructor.
+
+        Args:
+            ical_event (Event | RequestEvent): event object to be made into an ics file.
+            prod_id (ProdID): production id signature for vCal event
+            method (str | METHOD): VEVENT calendar component method.
+            version (int, optional): vCalendar version. Defaults to 2.
+            calendar_scale (str, optional): Calendar scale. Defaults to "GREGORIAN".
+        """
         self.event = ical_event
         self.method = method
         self.calendar = Calendar()

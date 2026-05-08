@@ -144,7 +144,7 @@ class MailServer:
     def send_message(
         self,
         msg: MIMEMultipart | MIMEText | MIMEBase,
-        recipient_addresses: list[MailAddress],
+        recipient_addresses: list[MailAddress | vCalAddress],
         sender_address: MailAddress,
         user: str,
         password: str,
@@ -288,7 +288,7 @@ class MailAddress(vCalAddress):
         language: str | Lang | None = None,
         rsvp: bool = True,
         sent_by: str | MailAddress | vCalAddress | None = None,
-    ):
+    ) -> str:
 
         return MailAddress(string_address,
                            common_name = common_name,

@@ -26,48 +26,57 @@ JSON_URL = "https://events.grinnell.edu/live/json/events/response_fields/all/pag
 INTEREST_FILE = BASE_DIR / "interests.json"
 
 with open(INTEREST_FILE, "r") as file:
-    data = json.load(file)
-    data = [Organization(**item) for item in data]
+    data = [Organization(**item) for item in json.load(file)]
     INTERESTS = {item.name: item for item in data}
     INTERESTS_COMMA = [item for item in data if item.has_comma]
 
 
 # Helper function to clean text by removing extra whitespace
 def clean_text(text: str | None) -> str:
+    """Cleans text by removing extra whitespace.
+
+    Args:
+        text (str | None): string to be cleaned
+
+    Returns:
+        str: cleaned text
+    """
     if text is None:
-        """"""
+        return ""
     return " ".join(str(text).split())
 
 
 def clean_html(html_text: str | None) -> str:
-    """Helper function to remove HTML tags from JSON fields like summary/description
+    """Removes HTML tags from JSON fields like summary/description.
 
     Args:
-        html_text (str | None): _description_
+        html_text (str | None): html text
 
     Returns:
-        str | None: _description_
+        str: Plain text html without tags.
     """
-    if html_text is None:
+    if not html_text:
         return ""
 
     soup = BeautifulSoup(html_text, "html.parser")
     return clean_text(soup.get_text(" "))
 
 
-def get_json_page(page_num : int) -> Any:
-    """Helper function to fetch one JSON page
+def get_json_page(page_num: int) -> dict[str, Any]:
+    """Fetches one JSON page from the JSON_URL endpoint.
 
     Args:
         page_num (int): page number
 
     Returns:
-        Any: Json object of type event page
+        Any: JSON diction of the provided event page.
     """
 
     url = JSON_URL + "?page=" + str(page_num)
+    response = requests.get(url)
+    response.raise_for_status()  # raise HTTP error if page is inaccessible
+    return response.json()
 
-    return requests.get(url).json()
 
 def sanitize_name(s: str) -> str:
     s = (
@@ -104,20 +113,32 @@ def sanitize_name(s: str) -> str:
 
 
 # gets the id of an interest
-def get_interest_id(cursor, name):
+def get_interest_id(cursor, name: str) -> int | None:
+    """ets the database Id of an interest by its name.
+
+
+    Args:
+        cursor (_type_): _description_
+        name (str): _description_
+
+    Returns:
+        int | None: _description_
+    """
+
     name = clean_text(name).lower()
-    cursor.execute(
-        """
-        SELECT id FROM interests WHERE LOWER(name) = ?
-    """,
-        (name,),
-    )
+    cursor.execute("SELECT id FROM interests WHERE LOWER(name) = ?", (name,))
     result = cursor.fetchone()
     return result[0] if result else None
 
 
-# adds event interest to events interest table
-def add_event_interest(cursor, name, event_id):
+def add_event_interest(cursor, name: str, event_id: str) -> None:
+    """Adds event interest to events interest table.
+
+    Args:
+        cursor (_type_): _description_
+        name (str): _description_
+        event_id (str): _description_
+    """
     interest_id = get_interest_id(cursor, name)
     if not interest_id:
         return
@@ -125,7 +146,7 @@ def add_event_interest(cursor, name, event_id):
         """
         INSERT OR IGNORE INTO event_interests (event_id, interest_id)
         VALUES (?, ?)
-    """,
+        """,
         (event_id, interest_id),
     )
 
@@ -137,142 +158,156 @@ def get_interest_by_id(interest_id, interests):
     return None
 
 
-# Scrape events from the LiveWhale JSON endpoint
-def scrape_events():
-    print("scraping!")
+def scrape_events() -> dict[str, dict]:
+    """Scrape events from the LiveWhale JSON endpoint and stores them in the database.
 
+    Returns:
+        dict[str, dict]: _description_
+    """
+
+    print("scraping events...")
+    initialize_database()
     connection = get_db()
     cursor = connection.cursor()
 
     # Temporarily disable FK constraints for initialization
     cursor.execute("PRAGMA foreign_keys = OFF")
+    # cursor.execute("DELETE FROM events")
     # cursor.execute("DELETE FROM interests")
-    cursor.execute("DROP TABLE IF EXISTS event_interests")
+    # cursor.execute("DELETE FROM event_interests")
     cursor.execute("PRAGMA foreign_keys = ON")
 
     events = {}
 
     inserted_count = 0
 
-    # Get first page so we can learn how many total pages exist
-    first_page = get_json_page(1)
+    try:
+        # Get first page so we can learn how many total pages exist
+        first_page = get_json_page(1)
 
-    # The JSON file includes meta.total_pages, e.g. page 9 of 9 in your pasted file
-    total_pages = first_page["meta"]["total_pages"]
+        # The JSON file includes meta.total_pages, e.g. page 9 of 9 in your pasted file
+        total_pages = first_page["meta"]["total_pages"]
 
-    # Go through every page
-    for i in range(1, total_pages + 1):
-        page_json = get_json_page(i)
+        # Go through every page
+        for i in range(1, total_pages + 1):
+            page_json = get_json_page(i)
 
-        # Each page stores event records inside the "data" list
-        raw_events = page_json.get("data", [])
+            # Each page stores event records inside the "data" list
+            raw_events = page_json.get("data", [])
 
-        for event in raw_events:
+            for event in raw_events:
 
-            # Get id
-            id = clean_text(event.get("id"))
+                # Get id
+                event_id = clean_text(event.get("id"))
 
-            # Get title
-            title = clean_text(event.get("title"))
+                if not event_id or event_id in events:
+                    continue
 
-            # Get start and end time
-            if event.get("date_time") is None:
-                start_time = "12 a.m."
-            else:
-                start_time = clean_text(event.get("date_iso"))
+                # Get title
+                title = clean_text(event.get("title"))
 
-            if event.get("date2_time") is None:
-                end_time = "11:59 p.m."
-            else:
-                end_time = clean_text(event.get("date2_iso"))
+                # Get start and end time
+                if event.get("date_time") is None:
+                    # JAFAR – THIS IS INCOMPLETE LOGIC:
+                    # We cannot set an arbitrary hour of day as start time, there must be a date
+                    # start_time = '12 a.m.'
+                    start_time = ''
+                else:
+                    start_time = clean_text(event.get("date_iso"))
 
-            # Get location
-            location = clean_text(event.get("location"))
+                if event.get("date2_time") is None:
+                    # JAFAR – THIS IS INCOMPLETE LOGIC. read above
+                    # end_time = '11:59 p.m.'
+                    end_time = ''
+                else:
+                    end_time = clean_text(event.get("date2_iso"))
 
-            # Get event summary/description
-            summary = clean_html(event.get("summary"))
+                # Get location
+                location = clean_text(event.get("location"))
 
-            # Summary/description could be in either summary or description field
-            if summary is None:
-                summary = clean_html(event.get("description"))
+                # Get event summary/description
+                summary = clean_html(event.get("summary"))
 
-            categories = ""
-            # Get event types if any
-            if event.get("event_types"):
-                categories = ",".join(event.get("event_types"))
+                # Summary/description could be in either summary or description field
+                if summary is None:
+                    summary = clean_html(event.get("description"))
 
-            tags = ""
-            # Get event tags if any
-            if event.get("tags"):
-                tags = ",".join(event.get("tags"))
+                categories = ""
+                # Get event types if any
+                if event.get("event_types"):
+                    categories = ",".join(event.get("event_types"))
 
-            org_name = ""
-            if event.get("custom_organization"):
-                org_name = clean_text(event.get("custom_organization"))
+                tags = ""
+                # Get event tags if any
+                if event.get("tags"):
+                    tags = ",".join(event.get("tags"))
 
-            # Create event dictionary and add to list
-            events[inserted_count] = {
-                "id": id,
-                "creation_time_stamp": (datetime.now(timezone.utc)).isoformat(),
-                "title": title,
-                "start_time": start_time,
-                "end_time": end_time,
-                "location": location,
-                "summary": summary,
-                "categories": categories,
-                "tags": tags,
-                "org_name": org_name,
-                "occurances": None
-            }
+                org_name = ""
+                if event.get("custom_organization"):
+                    org_name = clean_text(event.get("custom_organization"))
 
-            cursor.execute(
-                """
-                INSERT INTO events (
-                    id, event_id, creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    id,
-                    (datetime.now(timezone.utc)).isoformat(),
-                    title,
-                    start_time,
-                    end_time,
-                    location,
-                    summary,
-                    categories,
-                    tags,
-                    org_name,
-                    # event["frequency"] # Will include soon
-                ),
-            )
+                # Create event dictionary and add to list
+                events[event_id] = {
+                    "id": event_id,
+                    "creation_time_stamp": (datetime.now(timezone.utc)).isoformat(),
+                    "title": title,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "location": location,
+                    "summary": summary,
+                    "categories": categories,
+                    "tags": tags,
+                    "org_name": org_name,
+                    "frequency": None,
+                }
 
-            event_id = cursor.lastrowid
-
-            if org_name:
-                # add_interest(cursor, org_name)
-                org_name = sanitize_name(clean_html(org_name))
-                interests = org_name.split(", ")
-                # corrects for potential incorrect splitting of name by adding in any org with a comma in their name
-                if "," in org_name:
-                    interests.extend(
-                        interest.name
-                        for interest in INTERESTS_COMMA
-                        if interest.name in org_name
+                cursor.execute(
+                    """
+                    INSERT or IGNORE INTO events (
+                        id, creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name
                     )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        event_id,
+                        (datetime.now(timezone.utc)).isoformat(),
+                        title,
+                        start_time,
+                        end_time,
+                        location,
+                        summary,
+                        categories,
+                        tags,
+                        org_name,
+                        # event["frequency"] # Will include soon
+                    ),
+                )
 
-                for interest in interests:
-                    add_event_interest(cursor, interest, event_id)
-            inserted_count += 1
+                if org_name:
+                    # add_interest(cursor, org_name)
+                    org_name = sanitize_name(clean_html(org_name))
+                    interests = org_name.split(", ")
+                    # corrects for potential incorrect splitting of name by adding in any org with a comma in their name
+                    if "," in org_name:
+                        interests.extend(
+                            interest.name
+                            for interest in INTERESTS_COMMA
+                            if interest.name in org_name
+                        )
 
-    connection.commit()
-    connection.close()
+                    for interest in interests:
+                        add_event_interest(cursor, interest, event_id)
+                if cursor.rowcount > 0:
+                    inserted_count += 1
 
-    print("Events couont before occurance detection:", len(events))
-    occurance_finder(events)
-    print("Events count after occurance detection:", len(events))
+        connection.commit()
+        print(f"Inserted {inserted_count} events into the database.")
 
-    print("Inserted " + str(inserted_count) + " events into the database.")
+    except Exception as e:
+        connection.rollback()
+        print(f"Error occurred during scraping: {e}")
+    finally:
+        connection.close()
 
     return events
 
@@ -379,6 +414,6 @@ if __name__ == "__main__":
     initialize_database()
     populate_interests()
     events = scrape_events()
-    test_scraping()
+    # test_scraping()
 
     print("Number of events found:", len(events))

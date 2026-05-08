@@ -1,4 +1,5 @@
 from icalendar import Event, CLASS, STATUS, TRANSP, vRecur, vCalAddress
+from server.api.mail.mail_exchange import MailAddress
 from icalendar.error import InvalidCalendar
 from datetime import date, datetime, timedelta, timezone
 from typing import Sequence
@@ -40,7 +41,7 @@ class RequestEvent(Event):
         created: date | None = None,
         sequence: int | None = None,
         transparency: TRANSP = TRANSP.OPAQUE,
-    ):
+    ) -> Event:
         event = super(RequestEvent, cls).new(
             uid=uid,
             stamp=stamp,
@@ -117,8 +118,8 @@ class RequestEvent(Event):
             description=lorem.sentence(),
             start=datetime.now(timezone.utc),
             duration=timedelta(hours=1),
-            location=Config().grinnell_college_address,
-            organizer=vCalAddress(Config().grinvites_mail_address),
+            location=Config.grinnell_college_address,
+            organizer=vCalAddress(Config.grinvites_mail_address),
             status=STATUS.CONFIRMED,
             priority=0,
             attendees=attendees,
