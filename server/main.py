@@ -120,7 +120,7 @@ async def update_user(user_id: str, user_data: UserUpdate):
 @app.get("/users/{user_id}/interests")
 async def read_user_interests(user_id):
     interests = get_user_interests(user_id)
-    if not interests:
+    if interests is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     return interests

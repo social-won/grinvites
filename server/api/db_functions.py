@@ -138,6 +138,11 @@ def get_user_interests(user_id):
     connection = get_db()
     cursor = connection.cursor()
 
+    cursor.execute("SELECT 1 FROM users WHERE id = ?", (user_id,))
+    if cursor.fetchone() is None:
+        connection.close()
+        return None
+
     query = '''
         SELECT i.* FROM interests i
         INNER JOIN user_interests ui ON i.id = ui.interest_id
