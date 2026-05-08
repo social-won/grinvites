@@ -69,6 +69,13 @@ export const getUser = async (uid: string, accessToken?: string): Promise<ApiRes
     return apiFetch<GrinvitesUser>(`/users/${uid}`);
 };
 
+export const updateUserEmail = async (userId: string, email: string): Promise<ApiResponse<null>> => {
+    return apiFetch(`/users/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({ email }),
+    });
+};
+
 // ---------------------------------------------------------------------------
 // Invite schedule
 // ---------------------------------------------------------------------------
@@ -106,11 +113,11 @@ export const updateUserTheme = async (
 
 export const updateUserSchedule = async (
     userId: string,
-    inviteTimes: Record<string, string>,
+    invite_times: Record<string, string>,
 ): Promise<ApiResponse<null>> => {
     return apiFetch(`/users/${userId}`, {
         method: "PUT",
-        body: JSON.stringify({ invite_times: inviteTimes }),
+        body: JSON.stringify({ invite_times }),
     });
 };
 

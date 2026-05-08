@@ -26,9 +26,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     
     if (!session?.user) {
-      setUser(null);
-      setLoading(false);
-      return;
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      console.log(currentSession);
+      
+      if (!currentSession?.user) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      session = currentSession;
     }
 
     try {
@@ -40,7 +46,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log(e)
       });
 
-      console.log(data?.status);
+      // console.log(data);
       
 
       if (!data?.data) {

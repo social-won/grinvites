@@ -17,6 +17,7 @@ import {
   getInterests,
   getUserInterests,
   getUserSchedule,
+  updateUserEmail,
   updateUserInterests,
   updateUserSchedule,
   updateUserTheme,
@@ -26,6 +27,7 @@ import { ChevronDown, ChevronRight, Sun, Moon, Monitor } from 'lucide-react'
 import { Checkbox } from '../ui/checkbox'
 import { useTheme, Theme } from '@/context/theme-context'
 import { cn } from '@/lib/utils'
+import supabase from '@/lib/supabase'
 
 function InterestRow({ interest, selected, onToggle, indent = false }: { interest: Interest; selected: boolean; onToggle: (id: number) => void; indent?: boolean }) {
   return (
@@ -51,10 +53,15 @@ const PreferencesTab: FC = () => {
   const [inviteTimes, setInviteTimes] = useState<Record<string, string>>({})
   const [draftTimes, setDraftTimes] = useState<Record<string, string>>({})
 
+  const [emailError, setEmailError] = useState('')
+  const [emailSuccess, setEmailSuccess] = useState('')
+
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
 
   const [allInterests, setAllInterests] = useState<Interest[]>([])
   const [userInterestIds, setUserInterestIds] = useState<number[]>([])
@@ -289,23 +296,31 @@ const PreferencesTab: FC = () => {
                 id="cal-email"
                 type="email"
                 value={calendarEmailDraft}
-                onChange={(e) => setCalendarEmailDraft(e.target.value)}
+                onChange={(e) => { setCalendarEmailDraft(e.target.value); setEmailError(''); setEmailSuccess('') }}
               />
             </Field>
+            {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+            {emailSuccess && <p className="text-sm text-green-600">{emailSuccess}</p>}
             <p className="text-sm text-muted-foreground">
               This will change which email you get sent invitations to and may need to be reverified.
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setEmailOpen(false)}
+                onClick={() => { setEmailOpen(false); setEmailError(''); setEmailSuccess('') }}
               >
                 Cancel
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
+                  setEmailError('')
+                  setEmailSuccess('')
+                  const { error } = await supabase.auth.updateUser({ email: calendarEmailDraft }, {emailRedirectTo: `${window.location.origin}/home`})
+                  if (error) { setEmailError(error.message); return }
                   setCalendarEmail(calendarEmailDraft)
-                  setEmailOpen(false)
+                  if (user) await updateUserEmail(user.id, calendarEmailDraft)
+                  setEmailSuccess('Check your new inbox for a confirmation link.')
+                  // setEmailOpen(false)
                 }}
               >
                 Update email
@@ -344,7 +359,7 @@ const PreferencesTab: FC = () => {
                 type="password"
                 placeholder="••••••••"
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
+                onChange={(e) => { setCurrentPassword(e.target.value); setPasswordError(''); setPasswordSuccess('') }}
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
@@ -355,7 +370,7 @@ const PreferencesTab: FC = () => {
                   type="password"
                   placeholder="••••••••"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={(e) => { setNewPassword(e.target.value); setPasswordError(''); setPasswordSuccess('') }}
                 />
               </Field>
               <Field>
@@ -365,10 +380,15 @@ const PreferencesTab: FC = () => {
                   type="password"
                   placeholder="••••••••"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(''); setPasswordSuccess('') }}
                 />
               </Field>
             </div>
+            {confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-sm text-destructive">Passwords do not match.</p>
+            )}
+            {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+            {passwordSuccess && <p className="text-sm text-green-600">{passwordSuccess}</p>}
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -376,6 +396,8 @@ const PreferencesTab: FC = () => {
                   setCurrentPassword('')
                   setNewPassword('')
                   setConfirmPassword('')
+                  setPasswordError('')
+                  setPasswordSuccess('')
                   setPasswordOpen(false)
                 }}
               >
@@ -383,10 +405,20 @@ const PreferencesTab: FC = () => {
               </Button>
               <Button
                 disabled={!currentPassword || !newPassword || newPassword !== confirmPassword}
-                onClick={() => {
+                onClick={async () => {
+                  setPasswordError('')
+                  setPasswordSuccess('')
+                  const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email: calendarEmail,
+                    password: currentPassword,
+                  })
+                  if (signInError) { setPasswordError('Current password is incorrect.'); return }
+                  const { error } = await supabase.auth.updateUser({ password: newPassword })
+                  if (error) { setPasswordError(error.message); return }
                   setCurrentPassword('')
                   setNewPassword('')
                   setConfirmPassword('')
+                  setPasswordSuccess('Password updated successfully.')
                   setPasswordOpen(false)
                 }}
               >
