@@ -1,5 +1,7 @@
 # Run: pip install -r requirements.txt
 
+pytest
+
 #scraping
 requests
 beautifulsoup4
@@ -14,3 +16,4 @@ lorem_text
 iso639-lang
 domain-validator
 email-validator
+
