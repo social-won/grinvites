@@ -57,9 +57,9 @@ def initialize_database():
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY,
             event_id TEXT NOT NULL,
-            creation_time_stamp TEXT NOT NULL,
             title TEXT NOT NULL,
             start_time TEXT NOT NULL,
+            creation_time_stamp TEXT NOT NULL,
             end_time TEXT,
             location TEXT,
             summary TEXT,

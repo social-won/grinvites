@@ -10,7 +10,8 @@ import unicodedata
 import requests
 import sqlite3
 from bs4 import BeautifulSoup
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from sql_init import initialize_database
 
 # from sql_init import initialize_database
 from api.db_functions import get_db
@@ -174,14 +175,10 @@ def scrape_events():
             title = clean_text(event.get("title"))
 
             # Get start and end time
-            if event.get("date_time") is None:
-                start_time = "12 a.m."
-            else:
+            if event.get("date_iso"):
                 start_time = clean_text(event.get("date_iso"))
 
-            if event.get("date2_time") is None:
-                end_time = "11:59 p.m."
-            else:
+            if event.get("date2_time"):
                 end_time = clean_text(event.get("date2_iso"))
 
             # Get location
@@ -210,7 +207,8 @@ def scrape_events():
 
             # Create event dictionary and add to list
             events[inserted_count] = {
-                "id": id,
+                "id": inserted_count,
+                "event_id": id,
                 "creation_time_stamp": (datetime.now(timezone.utc)).isoformat(),
                 "title": title,
                 "start_time": start_time,
@@ -226,22 +224,23 @@ def scrape_events():
             cursor.execute(
                 """
                 INSERT INTO events (
-                    id, event_id, creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name
+                    id, event_id, title, creation_time_stamp, start_time, end_time, location, summary, categories, tags, org_name
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
+                    inserted_count,
                     id,
-                    (datetime.now(timezone.utc)).isoformat(),
                     title,
+                    (datetime.now(timezone.utc)).isoformat(),
                     start_time,
                     end_time,
                     location,
                     summary,
                     categories,
                     tags,
-                    org_name,
-                    # event["frequency"] # Will include soon
+                    org_name
+                    #event["frequency"] # Will include soon
                 ),
             )
 
@@ -279,7 +278,7 @@ def scrape_events():
 # Updates the original events list with occurance information for multiple-occuring events.
 def occurance_finder(events):
     # Filter events to only those from now till 30 days from now
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     month_start = now
     month_end = now + timedelta(days=30)
     
@@ -326,45 +325,46 @@ def test_scraping():
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT id, creation_time_stamp, title, start_time, end_time,
+        SELECT id, event_id, creation_time_stamp, title, start_time, end_time,
             location, summary, categories, tags, org_name, frequency
         FROM events
         LIMIT 5
     """)
 
-    events = cursor.fetchall()
+    db_events = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT id, name
-        FROM interests
-    """)
-    interests = cursor.fetchall()
+    # cursor.execute("""
+    #     SELECT id, name
+    #     FROM interests
+    # """)
+    # interests = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT event_id, interest_id
-        FROM event_interests
-    """)
-    event_interests = cursor.fetchall()
+    # cursor.execute("""
+    #     SELECT event_id, interest_id
+    #     FROM event_interests
+    # """)
+    # event_interests = cursor.fetchall()
     connection.close()
 
     print("\nFirst 5 events in database:")
-    for event in events:
-        print("ID:", event[0])
-        print("\tCreated:", event[1])
-        print("\tTitle:", event[2])
-        print("\tStart:", event[3])
-        print("\tEnd:", event[4])
-        print("\tLocation:", event[5])
-        print("\tSummary:", event[6])
-        print("\tCategories:", event[7])
-        print("\tTags:", event[8])
-        print("\tOrg Name:", event[9])
-        print("\tFrequency:", event[10])
+    for event in db_events:
+        print("Unique ID:", event[0])
+        print("Event ID:", event[1])
+        print("\tCreated:", event[2])
+        print("\tTitle:", event[3])
+        print("\tStart:", event[4])
+        print("\tEnd:", event[5])
+        print("\tLocation:", event[6])
+        print("\tSummary:", event[7])
+        print("\tCategories:", event[8])
+        print("\tTags:", event[9])
+        print("\tOrg Name:", event[10])
+        print("\tFrequency:", event[11])
         print()
 
-    for interest in interests:
-        # print("Interest ID:", interest[0])
-        print("Interest Name:", interest[1])
+    # for interest in interests:
+    #     # print("Interest ID:", interest[0])
+    #     print("Interest Name:", interest[1])
 
     # for event_interest in event_interests:
     #     print("Event ID:", event_interest[0])
