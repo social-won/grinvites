@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 # from sql_init import initialize_database
 from api.db_functions import add_event, get_db
 from api.sql_init import initialize_database
-from models import Organization
+from models import Event, Organization
 from api.interests import populate_interests
 
 # Source: https://realpython.com/beautiful-soup-web-scraper-python/
@@ -113,33 +113,43 @@ def sanitize_name(s: str) -> str:
 
 
 # gets the id of an interest
-def get_interest_id(cursor, name: str) -> int | None:
+def get_interest_id(name: str, cursor=None) -> int | None:
     """ets the database Id of an interest by its name.
 
 
     Args:
-        cursor (_type_): _description_
         name (str): _description_
+        cursor (_type_): _description_
 
     Returns:
         int | None: _description_
     """
+    own_connection = cursor is None
+    if own_connection:
+        connection = get_db()
+        cursor = connection.cursor()
 
     name = clean_text(name).lower()
     cursor.execute("SELECT id FROM interests WHERE LOWER(name) = ?", (name,))
     result = cursor.fetchone()
+    if own_connection: connection.close()
     return result[0] if result else None
 
 
-def add_event_interest(cursor, name: str, event_id: str) -> None:
+def add_event_interest(name: str, event_id: str, cursor=None) -> None:
     """Adds event interest to events interest table.
 
     Args:
-        cursor (_type_): _description_
         name (str): _description_
         event_id (str): _description_
+        cursor (_type_): _description_
     """
-    interest_id = get_interest_id(cursor, name)
+    own_connection = cursor is None
+    if own_connection:
+        connection = get_db()
+        cursor = connection.cursor()
+
+    interest_id = get_interest_id(name, cursor)
     if not interest_id:
         return
     cursor.execute(
@@ -149,6 +159,9 @@ def add_event_interest(cursor, name: str, event_id: str) -> None:
         """,
         (event_id, interest_id),
     )
+    if own_connection:
+        connection.commit()
+        connection.close()
 
 
 def get_interest_by_id(interest_id, interests):
@@ -177,7 +190,7 @@ def scrape_events() -> dict[str, dict]:
     # # cursor.execute("DELETE FROM event_interests")
     # cursor.execute("PRAGMA foreign_keys = ON")
 
-    events = {}
+    events: list[Event] = {}
 
     inserted_count = 0
 
@@ -242,41 +255,23 @@ def scrape_events() -> dict[str, dict]:
                     org_name = clean_text(event.get("custom_organization"))
 
                 # Create event dictionary and add to list
-                events[event_id] = {
-                    "id": event_id,
-                    "creation_time_stamp": (datetime.now(timezone.utc)).isoformat(),
-                    "title": title,
-                    "start_time": start_time,
-                    "end_time": end_time,
-                    "location": location,
-                    "summary": summary,
-                    "categories": categories,
-                    "tags": tags,
-                    "org_name": org_name,
-                    "frequency": None,
-                }
-
-                cursor.execute(
-                    """
-                    INSERT or IGNORE INTO events (
-                        id, creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        event_id,
-                        (datetime.now(timezone.utc)).isoformat(),
-                        title,
-                        start_time,
-                        end_time,
-                        location,
-                        summary,
-                        categories,
-                        tags,
-                        org_name,
-                        # event["frequency"] # Will include soon
-                    ),
+                events[inserted_count] = Event(
+                    id=inserted_count,
+                    event_id=event_id,
+                    creation_time_stamp=datetime.now(timezone.utc).isoformat(),
+                    title=title,
+                    start_time=start_time,
+                    end_time=end_time,
+                    location=location,
+                    summary=summary,
+                    categories=categories,
+                    tags=tags,
+                    org_name=org_name,
                 )
+
+
+                add_event(events[inserted_count], cursor)
+
 
                 if org_name:
                     # add_interest(cursor, org_name)
@@ -291,11 +286,11 @@ def scrape_events() -> dict[str, dict]:
                         )
 
                     for interest in interests:
-                        add_event_interest(cursor, interest, event_id)
+                        add_event_interest(interest, event_id, cursor)
                 # if cursor.rowcount > 0:
                 inserted_count += 1
 
-        connection.commit()
+            connection.commit()
         print(f"Inserted {inserted_count} events into the database.")
 
     except Exception as e:

@@ -200,9 +200,11 @@ def get_interests():
     return interests
 
 
-def add_event(event: Event):
-    connection = get_db()
-    cursor = connection.cursor()
+def add_event(event: Event, cursor=None):
+    own_connection = cursor is None
+    if own_connection:
+        connection = get_db()
+        cursor = connection.cursor()
 
     try:
         query = '''
@@ -227,11 +229,12 @@ def add_event(event: Event):
 
         cursor.execute(query, data)
     except Exception as e:
-        connection.rollback()
+        if own_connection: connection.rollback()
         print(f"Error occurred adding event {event.id}: {e}")
     finally:
-        connection.commit()
-        connection.close()
+        if own_connection:
+            connection.commit()
+            connection.close()
 
 
 def get_events():
