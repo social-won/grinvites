@@ -13,7 +13,7 @@ from icalendar import Event, ROLE
 from models import User
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "api"))
 
-from api.db_functions import get_events_within_two_weeks, get_users_for_event_full, if_user_emailed_for_event, get_event_by_id
+from api.db_functions import add_user_events_emailed, get_events_within_two_weeks, get_users_for_event_full, if_user_emailed_for_event, get_event_by_id
 from api.mail.config import config, Config
 from api.mail.enums import METHOD
 from api.mail.events import RequestEvent
@@ -185,6 +185,8 @@ def _dispatch_cycle(config: Config, server: MailServer) -> None:
         matched = len(unsent_users)
         matches += matched
         _send_event_invite(event, unsent_users, config, server)
+
+        add_user_events_emailed(event["id"])
 
     log.info(
         "Dispatch cycle complete — %d user(s) matched the current window.", matches)

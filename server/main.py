@@ -19,6 +19,11 @@ from api.scraper import scrape_events, test_scraping
 from api.interests import populate_interests
 from daemon import run_daemon
 
+async def dummy_daemon(sleep: int = 10) -> None:
+    
+    while True:
+        print("hi ", datetime.now().fromisoformat())
+        await asyncio.sleep(sleep)
 
 
 @asynccontextmanager
@@ -30,7 +35,7 @@ async def lifespan(app: FastAPI):
         scrape_events()
         # test_scraping()
 
-    task = asyncio.create_task(run_daemon(10))
+    task = asyncio.create_task(dummy_daemon(1000))
     yield
     task.cancel()
 
@@ -199,6 +204,10 @@ async def get_user_events(user_id: str):
 @app.get("/interests")
 async def read_interests():
     return get_interests()
+
+@app.get("/events")
+async def read_events():
+    return get_events()
 
 # Get event object
 
