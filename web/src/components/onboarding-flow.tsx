@@ -53,6 +53,7 @@ export default function OnboardingFlow() {
   });
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(GROUPS));
   const [emailOpened, setEmailOpened] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const [interestsArray, setInterestsArray] = useState<Interest[]>([]);
 
 
@@ -69,13 +70,14 @@ export default function OnboardingFlow() {
   }, [])
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || initialized) return;
     getUserInterests(user.id).then(({ data }) => {
       if (data) setFormData(prev => ({ ...prev, selectedOrgs: data.map(i => i.id) }));
     });
     getUserSchedule(user.id).then(({ data }) => {
       if (data) setFormData(prev => ({ ...prev, inviteSchedule: data.invite_times }));
     });
+    setInitialized(true);
   }, [user]);
 
 
