@@ -1,3 +1,4 @@
+from __future__ import annotations
 import smtplib
 import socket
 from domain_validator import DomainValidator
@@ -12,8 +13,8 @@ from email_validator import validate_email as validate_email
 from icalendar.prop.cal_address import vCalAddress
 from icalendar.enums import CUTYPE, ROLE, PARTSTAT
 from iso639 import Lang
-from server.api.mail.utils import get_enum_value, get_iso639_language_name
-from server.api.mail.error import (
+from .utils import get_enum_value, get_iso639_language_name
+from .error import (
     InvalidCalendarAddress,
     UndeliverableMailAddress,
     invalid_parameter_error_message,
@@ -119,14 +120,31 @@ class MailServer:
         except:
             return False
 
+    def is_smtp_server_live(self, timeout: int = 5) -> bool:
+
+        if not MailServer._is__mail_port(self.port):
+            return False
+        try:
+            if self.port == 465:
+                smtp = smtplib.SMTP_SSL(self.hostname, self.port, timeout=timeout)
+            else:
+                smtp = smtplib.SMTP(self.hostname, self.port, timeout=timeout)
+                smtp.starttls()
+
+            with smtp:
+                response_code, _ = smtp.noop()
+                return 200 <= response_code < 300
+        except:
+            return False
+
     @staticmethod
     def _get_hostname_ip_address(hostname: str) -> str:
         return socket.gethostbyname(hostname)
 
     def send_message(
         self,
-        msg: MIMEMultipart | MIMEText,
-        recipient_address: MailAddress,
+        msg: MIMEMultipart | MIMEText | MIMEBase,
+        recipient_addresses: list[MailAddress],
         sender_address: MailAddress,
         user: str,
         password: str,
@@ -141,7 +159,7 @@ class MailServer:
             with smtp:
                 smtp.login(user, password)
                 smtp.sendmail(
-                    sender_address.email, recipient_address.email, msg.as_string()
+                    sender_address.email, [r.email for r in recipient_addresses], msg.as_string()
                 )
 
         except smtplib.SMTPHeloError:
@@ -159,10 +177,10 @@ class MailServer:
                 "DELIVERY FAILURE: The server rejected ALL recipients (no mail was sent)."
             )
         except smtplib.SMTPSenderRefused:
-            print("DELIVERY FAILURE: The server didn't accept the sender_address.")
-        except smtplib.SMTPDataError:
+            print(f"DELIVERY FAILURE: The server didn't accept the sender_address. {sender_address.email}")
+        except smtplib.SMTPDataError as e:
             print(
-                "DELIVERY FAILURE: The server replied with an unexpected error code (other than a refusal of a recipient)."
+                f"DELIVERY FAILURE: The server replied with an unexpected error code (other than a refusal of a recipient).\nEROOR: {e.smtp_code}. {e.smtp_error}"
             )
         except Exception as e:
             print(f"DELIVERY FAILURE: {e}")
@@ -213,16 +231,14 @@ class MailAddress(vCalAddress):
 
         if delegated_from is not None:
             try:
-                params["DELEGATED-FROM"] = (
-                    f"mailto:{MailAddress.get_email(delegated_from)}"
-                )
+                params["DELEGATED-FROM"] = vCalAddress._get_email(delegated_from)
             except:
                 print(invalid_parameter_error_message(MailAddress, "delegated_from"))
                 print(invalid_parameter_error_message(vCalAddress, "delegated_from"))
 
         if delegated_to is not None:
             try:
-                params["DELEGATED-TO"] = f"mailto:{MailAddress.get_email(delegated_to)}"
+                params["DELEGATED-TO"] = vCalAddress._get_email(delegated_to)
             except:
                 print(invalid_parameter_error_message(MailAddress, "delegated_to"))
                 print(invalid_parameter_error_message(vCalAddress, "delegated_to"))
@@ -253,25 +269,12 @@ class MailAddress(vCalAddress):
 
         if sent_by is not None:
             try:
-                params["SENT-BY"] = f"mailto:{MailAddress.get_email(sent_by)}"
+                params["SENT-BY"] = vCalAddress._get_email(sent_by)
             except:
                 print(invalid_parameter_error_message(MailAddress, "sent_by"))
                 print(invalid_parameter_error_message(vCalAddress, "sent_by"))
 
-        return super().__new__(cls, string_address, "utf-8", params=params)
-
-    # @classmethod
-    # def new(  # type: ignore[override]
-    #     cls,
-
-    # ):
-    #     """MailAddress Constructor creates a vCalAddress instance with automatic mailto: prefix handling
-    #     and support for all standard RFC 5545 parameters
-
-    #     Args:
-    #         string_address (str): email address as string.
-    #     """
-    #    return None
+        return super().__new__(cls, vCalAddress._get_email(string_address), "utf-8", params=params)
 
     @classmethod
     def individual_request(
@@ -289,10 +292,13 @@ class MailAddress(vCalAddress):
 
         return MailAddress(string_address,
                            common_name = common_name,
+                           cutype = CUTYPE.INDIVIDUAL,
                            delegated_from = delegated_from,
                            delegated_to = delegated_to,
                            directory =  directory,
                            language = language,
+                           partstat = PARTSTAT.NEEDS_ACTION,
+                           role = ROLE.OPT_PARTICIPANT,
                            rsvp = rsvp,
                            sent_by = sent_by)
 

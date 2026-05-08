@@ -1,5 +1,7 @@
 import sys
 import os
+from typing import Any
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one level
 
 import json
@@ -8,8 +10,9 @@ import unicodedata
 import requests
 import sqlite3
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta, timezone
-from sql_init import initialize_database
+from datetime import datetime, timezone
+
+# from sql_init import initialize_database
 from api.db_functions import get_db
 from models import Organization
 
@@ -19,7 +22,7 @@ from models import Organization
 
 JSON_URL = "https://events.grinnell.edu/live/json/events/response_fields/all/paginate"
 
-with open('api/interests.json', 'r') as file:
+with open("api/interests.json", "r") as file:
     data = json.load(file)
     data = [Organization(**item) for item in data]
     INTERESTS = {item.name: item for item in data}
@@ -27,33 +30,55 @@ with open('api/interests.json', 'r') as file:
 
 
 # Helper function to clean text by removing extra whitespace
-def clean_text(text):
+def clean_text(text: str | None) -> str:
     if text is None:
-        return None
+        """"""
     return " ".join(str(text).split())
 
 
-# Helper function to remove HTML tags from JSON fields like summary/description
-def clean_html(html_text):
+def clean_html(html_text: str | None) -> str:
+    """Helper function to remove HTML tags from JSON fields like summary/description
+
+    Args:
+        html_text (str | None): _description_
+
+    Returns:
+        str | None: _description_
+    """
     if html_text is None:
-        return None
+        return ""
 
     soup = BeautifulSoup(html_text, "html.parser")
     return clean_text(soup.get_text(" "))
 
 
-# Helper function to fetch one JSON page
-def get_json_page(page_num):
+def get_json_page(page_num : int) -> Any:
+    """Helper function to fetch one JSON page
+
+    Args:
+        page_num (int): page number
+
+    Returns:
+        Any: Json object of type event page
+    """
+
     url = JSON_URL + "?page=" + str(page_num)
 
-    return requests.get(url).json() 
+    return requests.get(url).json()
 
 def sanitize_name(s: str) -> str:
-    s = s.replace('’', '').replace('‘', '').replace("'", '').replace('“', '').replace('”', '')
-    s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
+    s = (
+        s.replace("’", "")
+        .replace("‘", "")
+        .replace("'", "")
+        .replace("“", "")
+        .replace("”", "")
+    )
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
     return s.lower().strip()
 
-#adds interest to interest table
+
+# adds interest to interest table
 # def add_interest(cursor, name, interest_type="organization"):
 #     if not name:
 #         return
@@ -74,26 +99,33 @@ def sanitize_name(s: str) -> str:
 #         except KeyError:
 #             print(interest, "not found")
 
-#gets the id of an interest
+
+# gets the id of an interest
 def get_interest_id(cursor, name):
-    if not name:
-        return None
     name = clean_text(name).lower()
-    cursor.execute('''
+    cursor.execute(
+        """
         SELECT id FROM interests WHERE LOWER(name) = ?
-    ''', (name,))
+    """,
+        (name,),
+    )
     result = cursor.fetchone()
     return result[0] if result else None
 
-#adds event interest to events interest table
+
+# adds event interest to events interest table
 def add_event_interest(cursor, name, event_id):
     interest_id = get_interest_id(cursor, name)
     if not interest_id:
         return
-    cursor.execute('''
+    cursor.execute(
+        """
         INSERT OR IGNORE INTO event_interests (event_id, interest_id)
         VALUES (?, ?)
-    ''', (event_id, interest_id))
+    """,
+        (event_id, interest_id),
+    )
+
 
 def get_interest_by_id(interest_id, interests):
     for interest in interests:
@@ -135,7 +167,7 @@ def scrape_events():
 
         for event in raw_events:
 
-            #Get id
+            # Get id
             id = clean_text(event.get("id"))
 
             # Get title
@@ -164,7 +196,7 @@ def scrape_events():
 
             categories = ""
             # Get event types if any
-            if event.get("event_types"):  
+            if event.get("event_types"):
                 categories = ",".join(event.get("event_types"))
 
             tags = ""
@@ -176,8 +208,7 @@ def scrape_events():
             if event.get("custom_organization"):
                 org_name = clean_text(event.get("custom_organization"))
 
-
-            # Create event dictionary and add to list                        
+            # Create event dictionary and add to list
             events[inserted_count] = {
                 "id": id,
                 "creation_time_stamp": (datetime.now(timezone.utc)).isoformat(),
@@ -192,25 +223,27 @@ def scrape_events():
                 "occurances": None
             }
 
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO events (
                     id, event_id, creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                inserted_count,
-                id,
-                (datetime.now(timezone.utc)).isoformat(),
-                title,
-                start_time,
-                end_time,
-                location,
-                summary,
-                categories,
-                tags,
-                org_name
-                # event["occurances"] # Will include soon
-            ))
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    id,
+                    (datetime.now(timezone.utc)).isoformat(),
+                    title,
+                    start_time,
+                    end_time,
+                    location,
+                    summary,
+                    categories,
+                    tags,
+                    org_name,
+                    # event["frequency"] # Will include soon
+                ),
+            )
 
             event_id = cursor.lastrowid
 
@@ -220,13 +253,16 @@ def scrape_events():
                 interests = org_name.split(", ")
                 # corrects for potential incorrect splitting of name by adding in any org with a comma in their name
                 if "," in org_name:
-                    interests.extend(interest.name for interest in INTERESTS_COMMA if interest.name in org_name)
+                    interests.extend(
+                        interest.name
+                        for interest in INTERESTS_COMMA
+                        if interest.name in org_name
+                    )
 
                 for interest in interests:
                     add_event_interest(cursor, interest, event_id)
-            
             inserted_count += 1
-        
+
     connection.commit()
     connection.close()
 
@@ -284,63 +320,61 @@ def occurance_finder(events):
                     })
                     events.pop(id, None)
 
-
 # Tests if events were successfully inserted into the database by fetching and printing the first 5 events.
 def test_scraping():
     connection = get_db()
     cursor = connection.cursor()
 
-    cursor.execute('''
+    cursor.execute("""
         SELECT id, creation_time_stamp, title, start_time, end_time,
             location, summary, categories, tags, org_name, frequency
         FROM events
         LIMIT 5
-    ''')
-    
+    """)
+
     events = cursor.fetchall()
 
-    cursor.execute('''
-        SELECT id, name 
+    cursor.execute("""
+        SELECT id, name
         FROM interests
-    ''')
+    """)
     interests = cursor.fetchall()
 
-    cursor.execute('''
-        SELECT event_id, interest_id 
+    cursor.execute("""
+        SELECT event_id, interest_id
         FROM event_interests
-    ''')
+    """)
     event_interests = cursor.fetchall()
     connection.close()
-    
+
     print("\nFirst 5 events in database:")
     for event in events:
         print("ID:", event[0])
-        print("Created:", event[1])
-        print("Title:", event[2])
-        print("Start:", event[3])
-        print("End:", event[4])
-        print("Location:", event[5])
-        print("Summary:", event[6])
-        print("Categories:", event[7])
-        print("Tags:", event[8])
-        print("Org Name:", event[9])
-        print("Frequency:", event[10])
+        print("\tCreated:", event[1])
+        print("\tTitle:", event[2])
+        print("\tStart:", event[3])
+        print("\tEnd:", event[4])
+        print("\tLocation:", event[5])
+        print("\tSummary:", event[6])
+        print("\tCategories:", event[7])
+        print("\tTags:", event[8])
+        print("\tOrg Name:", event[9])
+        print("\tFrequency:", event[10])
         print()
-    
+
     for interest in interests:
         # print("Interest ID:", interest[0])
         print("Interest Name:", interest[1])
-    
+
     # for event_interest in event_interests:
     #     print("Event ID:", event_interest[0])
     #     print("Interest ID:", event_interest[1])
     #     print("Interest Name:", get_interest_by_id(event_interest[1], interests))
     #     print()
-        
 
 # run manually for testing
 if __name__ == "__main__":
     events = scrape_events()
     test_scraping()
-    
+
     print("Number of events found:", len(events))
