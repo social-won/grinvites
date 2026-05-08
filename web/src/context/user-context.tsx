@@ -22,7 +22,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { setTheme } = useTheme();
 
   const handleAuthChange = async (_e: AuthChangeEvent, session: Session | null) => {
-    console.log("auth changed!", session, _e);
+    // console.log("auth changed!", session, _e);
 
     
     if (!session?.user) {
@@ -39,6 +39,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log("ERROR!")
         console.log(e)
       });
+
+      console.log(data?.status);
+      
 
       if (!data?.data) {
         // On SIGNED_IN, a 404 means signup is in progress — the signup page
@@ -58,10 +61,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    console.log("user updated!", user);
+  // useEffect(() => {
+  //   console.log("user updated!", user);
     
-  }, [user])
+  // }, [user])
   
 
   useEffect(() => {

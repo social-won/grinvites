@@ -18,7 +18,7 @@ export default function LandingPage() {
                 <GiSquirrel className="text-8xl text-primary" />
                 <h1 className="text-5xl font-bold tracking-tight">Grinvites</h1>
                 <p className="text-muted-foreground text-lg max-w-md">
-                    Get invited to events at Grinnell that actually match your interests.
+                    Find events at Grinnell that actually match your interests.
                 </p>
                 <Button size="lg" asChild>
                     <Link to="/signup">Get started</Link>

@@ -61,7 +61,8 @@ export const getUser = async (uid: string, accessToken?: string): Promise<ApiRes
             });
             const data = response.ok ? await response.json() : null;
             return { status: response.status, data };
-        } catch {
+        } catch (error) {
+            console.error(`apiFetch /users/${uid}:`, error);
             return { status: 0, data: null };
         }
     }
