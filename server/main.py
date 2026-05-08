@@ -42,13 +42,9 @@ async def lifespan(app: FastAPI):
     yield
     task.cancel()
 
-if os.getenv("RESET_USERS"):
-    print("Reseting users")
-    initialize_database()
-    populate_interests()
-    scrape_events()
-elif os.getenv("RESET_EVENTS"):
-    scrape_events()
+initialize_database()
+populate_interests()
+scrape_events()
 # test_scraping()
 # Written following https://fastapi.tiangolo.com/tutorial/
 app = FastAPI(lifespan=lifespan)

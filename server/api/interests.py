@@ -8,6 +8,7 @@ from models import Organization
 
 
 def populate_interests():
+    # print("Populating interests...")
     orgs_path = os.path.join(os.path.dirname(__file__), "interests.json")
     with open(orgs_path, "r") as f:
         orgs = [Organization(**item) for item in json.load(f)]

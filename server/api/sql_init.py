@@ -11,8 +11,11 @@ def initialize_database():
     # Temporarily disable FK constraints for initialization
     cursor.execute("PRAGMA foreign_keys = OFF")
 
-    cursor.execute("DROP TABLE IF EXISTS users")
-    cursor.execute("DROP TABLE IF EXISTS user_interests")
+    if not os.getenv("KEEP_USERS"):
+        print("Dropping users...")
+        cursor.execute("DROP TABLE IF EXISTS users")
+        cursor.execute("DROP TABLE IF EXISTS user_interests")
+    print("Dropping events and interests...")
     cursor.execute("DROP TABLE IF EXISTS events")
     cursor.execute("DROP TABLE IF EXISTS event_interests")
     cursor.execute("DROP TABLE IF EXISTS interests")

@@ -10,11 +10,13 @@ import unicodedata
 import requests
 import sqlite3
 from bs4 import BeautifulSoup
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 # from sql_init import initialize_database
-from db_functions import get_db
+from api.db_functions import get_db
+from api.sql_init import initialize_database
 from models import Organization
+from api.interests import populate_interests
 
 # Source: https://realpython.com/beautiful-soup-web-scraper-python/
 # Source: https://scrapfly.io/blog/posts/web-scraping-with-playwright-and-python
@@ -138,7 +140,6 @@ def get_interest_by_id(interest_id, interests):
 # Scrape events from the LiveWhale JSON endpoint
 def scrape_events():
     print("scraping!")
-    initialize_database()
 
     connection = get_db()
     cursor = connection.cursor()
@@ -375,6 +376,8 @@ def test_scraping():
 
 # run manually for testing
 if __name__ == "__main__":
+    initialize_database()
+    populate_interests()
     events = scrape_events()
     test_scraping()
 
