@@ -17,16 +17,8 @@ from models import User, UserInterestsUpdate, UserUpdate
 from api.db_functions import *
 from api.scraper import scrape_events, test_scraping
 from api.interests import populate_interests
+from daemon import run_daemon
 
-
-async def my_daemon():
-    # print("hi!!!")
-
-    while True:
-
-        # check for updates, send emails, etc.
-        # print("hello!", datetime.now().isoformat())
-        await asyncio.sleep(60)
 
 
 @asynccontextmanager
@@ -38,7 +30,7 @@ async def lifespan(app: FastAPI):
         scrape_events()
         # test_scraping()
 
-    task = asyncio.create_task(my_daemon())
+    task = asyncio.create_task(run_daemon(10))
     yield
     task.cancel()
 

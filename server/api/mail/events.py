@@ -1,10 +1,10 @@
 from icalendar import Event, CLASS, STATUS, TRANSP, vRecur, vCalAddress
-from server.api.mail.mail_exchange import MailAddress
+# from server.api.mail.mail_exchange import MailAddress
 from icalendar.error import InvalidCalendar
 from datetime import date, datetime, timedelta, timezone
 from typing import Sequence
 from lorem_text import lorem
-from .config import Config
+from .config import config, Config
 import uuid
 
 
@@ -119,7 +119,7 @@ class RequestEvent(Event):
             start=datetime.now(timezone.utc),
             duration=timedelta(hours=1),
             location=Config.grinnell_college_address,
-            organizer=vCalAddress(Config.grinvites_mail_address),
+            organizer=vCalAddress(config.grinvites_mail_address),
             status=STATUS.CONFIRMED,
             priority=0,
             attendees=attendees,

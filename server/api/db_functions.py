@@ -118,8 +118,12 @@ def get_event_by_id(event_id):
     cursor.execute(query, data)
 
     event = cursor.fetchone()
+    column_names = [col[0] for col in cursor.description]
     connection.close()
-    return event
+
+    if not event:
+        return None
+    return dict(zip(column_names, event))
 
 # Updates a user's interests or adds them if non exist.
 
@@ -424,10 +428,10 @@ def get_events_within_two_weeks():
     return [dict(zip(column_names, row)) for row in rows]
 
 
-def get_users_for_event_full(event_id):
+def get_users_for_event_full(event_id) -> list[User]:
     """Returns full User objects for all users matched to an event via shared interests."""
     user_ids = get_users_for_event(event_id)
-    users = []
+    users: list[User] = []
     for uid in user_ids:
         u = get_user(uid)
         if u:
@@ -483,7 +487,7 @@ def add_user_events_emailed(event_id):
     connection.close()
 
 
-def if_user_emailed_for_event(user_id, event_id):
+def if_user_emailed_for_event(user_id: str, event_id: int):
     users_emailed_events = []
 
     connection = get_db()

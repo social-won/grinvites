@@ -179,7 +179,7 @@ def scrape_events() -> dict[str, dict]:
     """
 
     print("scraping events...")
-    initialize_database()
+    # initialize_database()
     connection = get_db()
     cursor = connection.cursor()
 
@@ -286,7 +286,7 @@ def scrape_events() -> dict[str, dict]:
                         )
 
                     for interest in interests:
-                        add_event_interest(interest, event_id, cursor)
+                        add_event_interest(interest, inserted_count, cursor)
                 # if cursor.rowcount > 0:
                 inserted_count += 1
 
