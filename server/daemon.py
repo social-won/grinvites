@@ -19,6 +19,7 @@ from api.mail.events import RequestEvent
 from api.mail.iCal import ICSFile, ProdID
 from api.mail.mail_exchange import MailAddress, MailServer
 from icalendar import vCalAddress, STATUS, CLASS, TRANSP
+from models import User
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,7 +35,15 @@ _SENDER_ADDRESS = MailAddress.new(
 
 
 def _is_scheduled_now(invite_times: dict[str, str]) -> bool:
-    """True if the user's invite_times contains today with a time within ±5 min of now."""
+    """True if the user's invite_times contains today within the specified ± _TOLERANCE of now.
+
+    Args:
+        invite_times (dict[str, str]): dictionary of Day keys and iso formatted str time values.
+
+    Returns:
+        bool: whether the invite times are within the specified _TOLERANCE
+    """
+
     now = datetime.now()
     day_key = _DAY_SHORT[now.weekday()]
     if day_key not in invite_times:
@@ -52,11 +61,11 @@ def _parse_duration(start_str: str, end_str: str | None) -> timedelta:
     """Return event duration; fall back to 1 hour when end_time is missing.
 
     Args:
-        start_str (str): _description_
-        end_str (str | None): _description_
+        start_str (str): The iso formatted beginning time.
+        end_str (str | None): The iso formatted ending time.
 
     Returns:
-        timedelta: _description_
+        timedelta: The difference in time between the start and end times.
     """
 
     if not end_str:
@@ -71,7 +80,15 @@ def _parse_duration(start_str: str, end_str: str | None) -> timedelta:
         return timedelta(hours=1)
 
 
-def _build_attendees(users) -> list[vCalAddress]:
+def _build_attendees(users: list[User]) -> list[vCalAddress]:
+    """Constructs and returns list of attendees as User as a list of vCalAddress.
+
+    Args:
+        users (list[User]): The list of attendees.
+
+    Returns:
+        list[vCalAddress]: The newly vCalAddress typed list of attendees.
+    """
     attendees = []
     for user in users:
         try:
@@ -86,6 +103,15 @@ def _build_attendees(users) -> list[vCalAddress]:
     return attendees
 
 def _build_request_event(event_id: str, attendees: list[vCalAddress]) -> Event:
+    """Constructs an Event given database.db event id and list of event attendees.
+
+    Args:
+        event_id (str): String formate of event id key as indicated in the database.
+        attendees (list[vCalAddress]): List of event attendees.
+
+    Returns:
+        Event: The event per RFC 5545 specification.
+    """
     event : dict[str, Any] = get_event_by_id(event_id=event_id)
     return RequestEvent.grinvites_event(
         uid=uuid.UUID(int = int(event_id)),
@@ -104,7 +130,15 @@ def _build_request_event(event_id: str, attendees: list[vCalAddress]) -> Event:
         sequence=0,
     )
 
-def _send_event_invite(event: dict, users, config: Config, server: MailServer) -> None:
+def _send_event_invite(event: dict[str, Any], users: list[User], config: Config, server: MailServer) -> None:
+    """Sends the provided User array the specified event through SMTP delivery set by the MailServer object.
+
+    Args:
+        event (dict[str, Any]): The database.db formatted event dictionary.
+        users (list[User]): The list of users to be sent the provided event.
+        config (Config): configuration object from mail environment settings.
+        server (MailServer): MailServer object used for SMTP server exchange.
+    """
     attendees = _build_attendees(users)
     if not attendees:
         log.info("Event %s — no valid attendees, skipping.", event["id"])
@@ -148,12 +182,13 @@ def _send_event_invite(event: dict, users, config: Config, server: MailServer) -
 
 
 def _dispatch_cycle(config: Config, server: MailServer) -> None:
-    """A single mail disbatch run. Sweeps database for all events within two weeks and mails out all matching recipients
+    """A single mail dispatch run. Sweeps database for all events within two weeks and mails out all matching recipients
 
     Args:
-        config (Config): _description_
-        server (MailServer): _description_
+        config (Config): configuration object from mail environment settings.
+        server (MailServer): MailServer object used for SMTP server exchange.
     """
+
     log.info("Checking events within the next two weeks.")
     events = get_events_within_two_weeks()
     log.info("Found %d upcoming event(s).", len(events))
@@ -170,11 +205,12 @@ def _dispatch_cycle(config: Config, server: MailServer) -> None:
         matches += matched
         _send_event_invite(event, unsent_users, config, server)
 
-
     log.info("Dispatch cycle complete — %d user(s) matched the current window.", matches)
 
 
 async def run_daemon() -> None:
+    """Call for the asynchronous mail daemon for event mail dispatching.
+    """
     try:
         server = MailServer(config.bulk_mail_smtp_url, config.default_smtp_port)
     except ValueError as exc:
