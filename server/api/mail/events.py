@@ -1,5 +1,4 @@
 from icalendar import Event, CLASS, STATUS, TRANSP, vRecur, vCalAddress
-from server.api.mail.mail_exchange import MailAddress
 from icalendar.error import InvalidCalendar
 from datetime import date, datetime, timedelta, timezone
 from typing import Sequence
@@ -72,9 +71,9 @@ class RequestEvent(Event):
 
                 #  Type checking for either list[tuple[datetime, None]], list[tuple[date, None]], or list[tuple[datetime, datetime]]
                 if (
-                    all(isinstance(x[0], date) and x[1] == None for x in recurrence)
+                    all(isinstance(x[0], date) and x[1] is None for x in recurrence)
                     or all(
-                        isinstance(x[0], datetime) and x[1] == None for x in recurrence
+                        isinstance(x[0], datetime) and x[1] is None for x in recurrence
                     )
                     or all(
                         isinstance(x[0], datetime) and isinstance(x[1], datetime)
@@ -83,7 +82,7 @@ class RequestEvent(Event):
                 ):
                     event.add("RDATE", recurrence)
                 else:
-                    raise InvalidCalendar(f"The provided RDATE is invalid.")
+                    raise InvalidCalendar("The provided RDATE is invalid.")
 
             #  RRULE: Type checking for list[vRecur]
             elif isinstance(recurrence, list) and all(
@@ -91,7 +90,7 @@ class RequestEvent(Event):
             ):
                 event.add("RRULE", recurrence)
             else:
-                raise InvalidCalendar(f"The provided RRULE is invalid.")
+                raise InvalidCalendar("The provided RRULE is invalid.")
 
         return event
 

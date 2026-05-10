@@ -1,5 +1,3 @@
-import sys
-import os
 from pathlib import Path
 from typing import Any
 
@@ -8,7 +6,6 @@ import json
 import unicodedata
 
 import requests
-import sqlite3
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
 
@@ -211,14 +208,14 @@ def scrape_events() -> dict[str, dict]:
                     # JAFAR – THIS IS INCOMPLETE LOGIC:
                     # We cannot set an arbitrary hour of day as start time, there must be a date
                     # start_time = '12 a.m.'
-                    start_time = ''
+                    start_time = ""
                 else:
                     start_time = clean_text(event.get("date_iso"))
 
                 if event.get("date2_time") is None:
                     # JAFAR – THIS IS INCOMPLETE LOGIC. read above
                     # end_time = '11:59 p.m.'
-                    end_time = ''
+                    end_time = ""
                 else:
                     end_time = clean_text(event.get("date2_iso"))
 
@@ -311,15 +308,15 @@ def scrape_events() -> dict[str, dict]:
 
     return events
 
+
 # Helper function to find occurances of events with the same title.
-# Limits search to events within the next month to avoid counting events that are far apart in time and not actually recurring. 
+# Limits search to events within the next month to avoid counting events that are far apart in time and not actually recurring.
 # Updates the original events list with occurance information for multiple-occuring events.
 def occurance_finder(events):
     # Filter events to only those from now till 30 days from now
     now = datetime.now()
-    month_start = now
     month_end = now + timedelta(days=30)
-    
+
     events_within_30days = {}
     for event in events.values():
         start_dt = datetime.fromisoformat(event["start_time"])
@@ -344,18 +341,23 @@ def occurance_finder(events):
             events[first_id]["occurances"] = []
             first = False
             for id in frequency_dict[title]:
-                if first == False:
-                    events[first_id]["occurances"].append({
-                        "start": events[id]["start_time"],
-                        "end": events[id]["end_time"]
-                    })
+                if not first:
+                    events[first_id]["occurances"].append(
+                        {
+                            "start": events[id]["start_time"],
+                            "end": events[id]["end_time"],
+                        }
+                    )
                     first = True
                 else:
-                    events[first_id]["occurances"].append({
-                        "start": events[id]["start_time"],
-                        "end": events[id]["end_time"]
-                    })
+                    events[first_id]["occurances"].append(
+                        {
+                            "start": events[id]["start_time"],
+                            "end": events[id]["end_time"],
+                        }
+                    )
                     events.pop(id, None)
+
 
 # Tests if events were successfully inserted into the database by fetching and printing the first 5 events.
 def test_scraping():
@@ -381,7 +383,6 @@ def test_scraping():
         SELECT event_id, interest_id
         FROM event_interests
     """)
-    event_interests = cursor.fetchall()
     connection.close()
 
     print("\nFirst 5 events in database:")
@@ -408,6 +409,7 @@ def test_scraping():
     #     print("Interest ID:", event_interest[1])
     #     print("Interest Name:", get_interest_by_id(event_interest[1], interests))
     #     print()
+
 
 # run manually for testing
 if __name__ == "__main__":

@@ -1,18 +1,14 @@
 from __future__ import annotations
 from iso639 import Lang, is_language
 from iso639.exceptions import InvalidLanguageValue
-from datetime import datetime, timezone, timedelta
-from icalendar import Calendar, Event, vCalAddress, CUTYPE, ROLE, PARTSTAT
+from icalendar import Calendar, Event, vCalAddress
 from icalendar.prop.text import vText
-from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
 from email.utils import formataddr
-from email import encoders
 from .enums import METHOD
 from .events import RequestEvent
 from .utils import get_enum_value
-from .config import Config
+from .config import config
 
 class ICSFile:
 
@@ -47,7 +43,7 @@ class ICSFile:
             self.calendar.to_ical().decode(decoding), "calendar"
         )
         calendar_message["To"] = ICSFile.format_addresses_for_mime(self.event.attendees)
-        calendar_message["From"] = Config().grinvites_mail_address_rfc5322
+        calendar_message["From"] = config.grinvites_mail_address_rfc5322
         calendar_message["Subject"] = self.event.summary
         calendar_message.set_param("method", get_enum_value(METHOD, self.method))
         calendar_message.add_header(
@@ -68,10 +64,10 @@ class ICSFile:
         RFC 5322 compliant string suitable for MIME 'To' or 'Cc' headers.
 
             Args:
-                attendees (list[vCalAddress]): _description_
+                attendees (list[vCalAddress]): list of attendees.
 
             Returns:
-                str: _description_
+                str: string of attendees, RFC 5322 compliant.
         """
 
         formatted_addresses = []
@@ -126,8 +122,18 @@ class ProdID:
             raise InvalidLanguageValue
         self.is_nonSGML = is_nonSGML
 
-    def to_string(self):
+    def to_string(self) -> str:
+        """Transforms ProdID to formatted string
+
+        Returns:
+            str: Formatted string of ProdID
+        """
         return f'-//{self.vendor_name}//{"NONSGML " if self.is_nonSGML else ""}{self.product_name}//{self.language}'
 
-    def to_vText(self):
+    def to_vText(self) -> vText:
+        """Transforms ProdID to vText of formatted string.
+
+        Returns:
+            vText: Formatted vText of ProdID.
+        """
         return vText(self.to_string())

@@ -1,17 +1,12 @@
 from __future__ import annotations
 import smtplib
 import socket
-from domain_validator import DomainValidator
 from ipaddress import ip_address
-from datetime import datetime, timezone, timedelta
-from icalendar import Calendar, Event, vCalAddress, CUTYPE, ROLE, PARTSTAT
-from icalendar.parser import Parameters
+from icalendar import  vCalAddress, CUTYPE, ROLE, PARTSTAT
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email_validator import validate_email as validate_email
-from icalendar.prop.cal_address import vCalAddress
-from icalendar.enums import CUTYPE, ROLE, PARTSTAT
 from iso639 import Lang
 from .utils import get_enum_value, get_iso639_language_name
 from .error import (
@@ -75,7 +70,7 @@ class MailServer:
                 MailServer._get_hostname_ip_address(hostname)
             )
             return True
-        except:
+        except Exception:
             return False
 
     @staticmethod
@@ -91,7 +86,7 @@ class MailServer:
         try:
             dns.resolver.resolve(domain, "MX")
             return True
-        except:
+        except Exception:
             return False
 
     @staticmethod
@@ -99,7 +94,7 @@ class MailServer:
         try:
             ip_address(address)
             return True
-        except:
+        except Exception:
             return False
 
     @staticmethod
@@ -117,7 +112,7 @@ class MailServer:
             with smtp:
                 response_code, _ = smtp.noop()
                 return 200 <= response_code < 300
-        except:
+        except Exception:
             return False
 
     def is_smtp_server_live(self, timeout: int = 5) -> bool:
@@ -134,7 +129,7 @@ class MailServer:
             with smtp:
                 response_code, _ = smtp.noop()
                 return 200 <= response_code < 300
-        except:
+        except Exception:
             return False
 
     @staticmethod
@@ -226,20 +221,20 @@ class MailAddress(vCalAddress):
         if cutype is not None:
             try:
                 params["CUTYPE"] = get_enum_value(CUTYPE, cutype)
-            except:
+            except Exception:
                 print(invalid_parameter_error_message(CUTYPE, "cutype"))
 
         if delegated_from is not None:
             try:
                 params["DELEGATED-FROM"] = vCalAddress._get_email(delegated_from)
-            except:
+            except Exception:
                 print(invalid_parameter_error_message(MailAddress, "delegated_from"))
                 print(invalid_parameter_error_message(vCalAddress, "delegated_from"))
 
         if delegated_to is not None:
             try:
                 params["DELEGATED-TO"] = vCalAddress._get_email(delegated_to)
-            except:
+            except Exception:
                 print(invalid_parameter_error_message(MailAddress, "delegated_to"))
                 print(invalid_parameter_error_message(vCalAddress, "delegated_to"))
 
@@ -249,19 +244,19 @@ class MailAddress(vCalAddress):
         if language is not None:
             try:
                 params["LANGUAGE"] = get_iso639_language_name(language)
-            except:
+            except Exception:
                 print(invalid_parameter_error_message(Lang, "language"))
 
         if partstat is not None:
             try:
                 params["PARTSTAT"] = get_enum_value(PARTSTAT, partstat)
-            except:
+            except Exception:
                 print(invalid_parameter_error_message(PARTSTAT, "partstat"))
 
         if role is not None:
             try:
                 params["ROLE"] = get_enum_value(ROLE, role)
-            except:
+            except Exception:
                 print(invalid_parameter_error_message(ROLE, "role"))
 
         if rsvp is not None:
@@ -270,7 +265,7 @@ class MailAddress(vCalAddress):
         if sent_by is not None:
             try:
                 params["SENT-BY"] = vCalAddress._get_email(sent_by)
-            except:
+            except Exception:
                 print(invalid_parameter_error_message(MailAddress, "sent_by"))
                 print(invalid_parameter_error_message(vCalAddress, "sent_by"))
 
@@ -310,7 +305,7 @@ class MailAddress(vCalAddress):
             try:
                 MailAddress._is_valid_local_part_and_domain(email)
                 return vCalAddress(email).email
-            except:
+            except Exception:
                 raise InvalidCalendarAddress(f"{email} is not a valid mail address.")
 
     @classmethod
@@ -366,7 +361,7 @@ class MailAddress(vCalAddress):
         try:
             validate_email(vCalAddress(string_address).email, check_deliverability=True)
             return True
-        except:
+        except Exception:
             return False
 
     def to_string(self) -> str:

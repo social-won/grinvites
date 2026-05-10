@@ -9,7 +9,6 @@ import uuid
 from typing import Any
 from datetime import datetime, timedelta, timezone
 from icalendar import Event, ROLE
-import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "api"))
 
 from api.db_functions import get_events_within_two_weeks, get_users_for_event_full, if_user_emailed_for_event, get_event_by_id
@@ -70,7 +69,6 @@ def _parse_duration(start_str: str, end_str: str | None) -> timedelta:
 
     if not end_str:
         return timedelta(hours=1)
-    fmt = "%Y-%m-%dT%H:%M:%S"
     try:
         start = datetime.fromisoformat(start_str)
         end = datetime.fromisoformat(end_str)
@@ -146,7 +144,7 @@ def _send_event_invite(event: dict[str, Any], users: list[User], config: Config,
 
     start_str = event["start_time"]
     try:
-        start = datetime.fromisoformat(start_str).replace(tzinfo=timezone.utc)
+        datetime.fromisoformat(start_str).replace(tzinfo=timezone.utc)
     except ValueError:
         log.warning("Event %s — unparseable start_time %s, skipping.", event["id"], start_str)
         return

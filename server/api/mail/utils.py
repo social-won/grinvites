@@ -11,7 +11,7 @@ def get_enum_value(enum_class : type[T], value : str | T) -> str:
     elif isinstance(value, str):
         try:
             return enum_class(value).value
-        except:
+        except Exception:
             raise ValueError(f'\'{value}\' is not a valid {enum_class.__name__}')
     else:
         raise TypeError(f'Received {value.__name__} but expected {enum_class.__name__} or string.')
