@@ -3,6 +3,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one leve
 
 from api.db_functions import get_db
 
+"""
+    Initializes SQL light database for the application. Creates tables for users, interests, user_interests, events, and event_interests.
+"""
 def initialize_database():
     #connect to the database (or create it if it doesn't exist)
     connection = get_db()

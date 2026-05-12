@@ -6,7 +6,11 @@ from models import User
 #from scraper import scrape_events
 
 #switch to id being input
-
+"""
+Creates a connection to the database
+Returns:
+    A connection object to the database
+"""
 def get_db() -> sqlite3.Connection:
     path = os.getenv("DB_PATH", "database.db")
     conn = sqlite3.connect(path)
@@ -14,7 +18,13 @@ def get_db() -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
-#Adds a user to the database
+"""
+Adds a user to the database
+Args:
+    user: A User object containing the user's information
+Returns:
+    None
+"""
 def add_user(user: User):
     connection = get_db()
     cursor = connection.cursor()
@@ -34,6 +44,11 @@ def add_user(user: User):
     connection.commit()
     connection.close()
 
+"""
+Gets all users in the database
+Returns:
+    A list of tuples containing all users in the database
+"""
 def get_users():
     connection = get_db()
     cursor = connection.cursor()
@@ -48,7 +63,12 @@ def get_users():
     connection.close()
     return users
 
-#Gets a user via their email
+"""
+Gets a user via their user_id
+Args:
+    user_id: The id of the user to get
+Returns:
+    A User object containing the user's information, or None if the user is not found"""
 def get_user(user_id: str) -> User | None:
     connection = get_db()
     cursor = connection.cursor()
@@ -71,7 +91,12 @@ def get_user(user_id: str) -> User | None:
 
     return User(**user_dict)
 
-#Gets a user via their email
+"""
+Gets a user via their email
+Args:
+    user_email: The email of the user to get
+Returns:
+    A tuple containing the user's information, or None if the user is not found"""
 def get_user_by_email(user_email):
     connection = get_db()
     cursor = connection.cursor()
@@ -87,6 +112,13 @@ def get_user_by_email(user_email):
     connection.close()
     return user
 
+"""
+Gets an event via its ID
+Args:
+    event_id: The ID of the event to get
+Returns:
+    A tuple containing the event's information, or None if the event is not found
+"""
 def get_event_by_id(event_id): 
     connection = get_db()
     cursor = connection.cursor()
@@ -102,7 +134,14 @@ def get_event_by_id(event_id):
     connection.close()
     return event
 
-#Updates a user's interests or adds them if non exist.
+"""
+Updates a user's interests in the database
+Args:
+    email: The email of the user to update
+    interest_ids: A list of interest IDs to associate with the user
+Returns:
+    None
+"""
 def update_user_interests(email, interest_ids):
     connection = get_db()
     cursor = connection.cursor()
@@ -126,7 +165,13 @@ def update_user_interests(email, interest_ids):
     connection.commit()
     connection.close()
 
-#Gets a user's interests via their user_id
+"""
+Gets a user's interests from the database
+Args:
+    email: The email of the user to get interests for
+Returns:
+    A list of interest IDs associated with the user
+"""
 def get_user_interests(user_id):
     connection = get_db()
     cursor = connection.cursor()
@@ -148,7 +193,11 @@ def get_user_interests(user_id):
     interests = [dict(zip(column_names, row)) for row in interests]
     return interests
 
-#Get all interests
+"""
+Gets all interests in the database
+Returns:
+    A list of dicts containing all interests in the database
+"""
 def get_interests():
     connection = get_db()
     cursor = connection.cursor()
@@ -169,6 +218,21 @@ def get_interests():
     connection.close()
     return interests
 
+"""
+Adds an event to the database
+Args:
+    title: The title of the event
+    start_time: The start time of the event
+    end_time: The end time of the event
+    location: The location of the event
+    summary: A summary of the event
+    categories: A list of categories for the event
+    tags: A list of tags for the event
+    org_name: The name of the organization hosting the event
+    frequency: The frequency of the event
+Returns:
+    None
+"""
 def add_event(title, start_time, end_time, location, summary = None, categories = None, tags = None, org_name = None, frequency = None):
     connection = get_db()
     cursor = connection.cursor()
@@ -183,7 +247,11 @@ def add_event(title, start_time, end_time, location, summary = None, categories 
 
     connection.commit()
     connection.close()
-
+"""
+Gets all events in the database
+Returns:
+    A list of tuples containing all events in the database
+"""
 def get_events():
     connection = get_db()
     cursor = connection.cursor()
@@ -198,7 +266,12 @@ def get_events():
     connection.close()
     return events
 
-#Gets an event via its title
+"""
+Gets an event via its title
+Args:
+    title: The title of the event to get
+Returns:
+    A tuple containing the event's information, or None if the event is not found"""
 def get_event_by_title(title):
     connection = get_db()
     cursor = connection.cursor()
@@ -214,6 +287,14 @@ def get_event_by_title(title):
     connection.close()
     return event
 
+"""
+Gets events that start within a given time range
+Args:
+    initial_start_time: The start time of the event
+    final_start_time: The end time of the event
+Returns:
+    A list of tuples containing the events within the specified time range
+"""
 def get_event_by_time(initial_start_time, final_start_time):
     connection = get_db()
     cursor = connection.cursor()
@@ -229,7 +310,14 @@ def get_event_by_time(initial_start_time, final_start_time):
     connection.close()
     return events
 
-#Updates an event's interests or adds them if non exist.
+"""
+Updates an event's interests in the database
+Args:
+    event_title: The title of the event to update
+    interest_ids: A list of interest IDs to associate with the event
+Returns:
+    None
+"""
 def update_event_interests(event_title, interest_ids):
     connection = get_db()
     cursor = connection.cursor()
@@ -253,7 +341,13 @@ def update_event_interests(event_title, interest_ids):
     connection.commit()
     connection.close()
 
-#Gets an event's interests via its title
+"""
+Gets an event's interests from the database
+Args:
+    event_title: The title of the event to get interests for
+Returns:
+    A list of interest IDs associated with the event
+"""
 def get_event_interests(event_title):
     connection = get_db()
     cursor = connection.cursor()
@@ -277,7 +371,11 @@ def get_event_interests(event_title):
     connection.close()
     return event_interests
 
-#Inserts events from the scraper into the database
+"""
+inserts all events into the database
+Args:    events: A list of dicts containing the events to insert into the database
+Returns:    None
+"""
 def insert_events_into_db(events):
     connection = get_db()
     cursor = connection.cursor()
@@ -302,6 +400,11 @@ def insert_events_into_db(events):
     connection.close()
     print(f"Inserted {inserted_count} events into the database.")
 
+"""
+Gets a list of events based on their start times
+Args:    start_time: The start time of the event to get
+Returns:    A list of tuples containing the events with the specified start time
+"""
 def get_event_id_by_time(start_time):
     connection = get_db()
     cursor = connection.cursor()
@@ -318,7 +421,11 @@ def get_event_id_by_time(start_time):
     connection.close()
     return event_ids
 
-#gets all user information for a given event
+"""
+Gets a list of user IDs for users that have interests that match an event's interests
+Args:    event_id: The ID of the event to get users for
+Returns:    A list of user IDs for users that have interests that match the event's interests
+"""
 def get_users_for_event(event_id):
     connection = get_db()
     cursor = connection.cursor()
@@ -342,7 +449,11 @@ def get_users_for_event(event_id):
     connection.close()
     return user_ids
 
-#returns the email and display name in json for all users of a given event
+"""
+Gets the emails and names of users that should be emailed for an event
+Args:    event_id: The ID of the event to get users for
+Returns:    A dict containing the emails and names of users that should be emailed for the event
+"""
 def get_users_to_email(event_id):
     users = get_users_for_event(event_id)
     user_names = []
@@ -371,6 +482,11 @@ def get_users_to_email(event_id):
     connection.close()
     return {"emails": user_emails, "names": user_names}
 
+"""
+adds an event to the list of events a user has been emailed about
+Args:    event_id: The ID of the event to add to the user's emailed list
+Returns:    None
+"""
 def add_user_events_emailed(event_id):
     users = get_users_for_event(event_id)
     connection = get_db()
@@ -387,7 +503,12 @@ def add_user_events_emailed(event_id):
 
     connection.commit()
     connection.close()
-
+"""
+Checks if a user has already been emailed about an event
+Args:    user_id: The ID of the user to check
+         event_id: The ID of the event to check
+Returns:    True if the user has already been emailed about the event, False otherwise
+"""
 def if_user_emailed_for_event(user_id, event_id):
     users_emailed_events = []
 
