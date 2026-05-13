@@ -53,9 +53,7 @@ def get_users():
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT * FROM users
-        '''
+    query = '''SELECT * FROM users'''
     
     cursor.execute(query)
 
@@ -73,8 +71,7 @@ def get_user(user_id: str) -> User | None:
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT * FROM users WHERE id = ?'''
+    query = '''SELECT * FROM users WHERE id = ?'''
     data = (user_id,)
 
     cursor.execute(query, data)
@@ -101,9 +98,7 @@ def get_user_by_email(user_email):
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT * FROM users WHERE email = ?
-        '''
+    query = '''SELECT * FROM users WHERE email = ?'''
     data = (user_email,)
 
     cursor.execute(query, data)
@@ -123,9 +118,7 @@ def get_event_by_id(event_id):
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT * FROM events WHERE id = ?
-        '''
+    query = '''SELECT * FROM events WHERE id = ?'''
     data = (event_id,)
 
     cursor.execute(query, data)
@@ -146,17 +139,13 @@ def update_user_interests(email, interest_ids):
     connection = get_db()
     cursor = connection.cursor()
 
-    select_query = '''
-        SELECT id FROM users WHERE email = ?
-        '''
+    select_query = '''SELECT id FROM users WHERE email = ?'''
     user_email = (email,)
 
     cursor.execute(select_query, user_email)
     user_id = cursor.fetchone()[0]
 
-    insert_query = '''
-        INSERT OR IGNORE INTO user_interests (user_id, interest_id) VALUES (?, ?)
-        '''
+    insert_query = '''INSERT OR IGNORE INTO user_interests (user_id, interest_id) VALUES (?, ?)'''
 
     for interest_id in interest_ids:
         data = (user_id, interest_id)
@@ -176,11 +165,7 @@ def get_user_interests(user_id):
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT i.* FROM interests i
-        INNER JOIN user_interests ui ON i.id = ui.interest_id
-        WHERE ui.user_id = ?
-        '''
+    query = '''SELECT i.* FROM interests i INNER JOIN user_interests ui ON i.id = ui.interest_id WHERE ui.user_id = ?'''
     data = (user_id,)
 
     cursor.execute(query, data)
@@ -202,9 +187,7 @@ def get_interests():
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT * FROM interests
-        '''
+    query = '''SELECT * FROM interests'''
     
     cursor.execute(query)
 
@@ -237,10 +220,7 @@ def add_event(title, start_time, end_time, location, summary = None, categories 
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        INSERT INTO events (creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name, frequency)
-        VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        '''
+    query = '''INSERT INTO events (creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name, frequency) VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)'''
     data = (title, start_time, end_time, location, summary, categories, tags, org_name, frequency)
     
     cursor.execute(query, data)
@@ -256,9 +236,7 @@ def get_events():
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT * FROM events
-        '''
+    query = '''SELECT * FROM events'''
 
     cursor.execute(query)
 
@@ -276,9 +254,7 @@ def get_event_by_title(title):
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT * FROM events WHERE title = ?
-        '''
+    query = '''SELECT * FROM events WHERE title = ?'''
     data = (title,)
 
     cursor.execute(query, data)
@@ -299,9 +275,7 @@ def get_event_by_time(initial_start_time, final_start_time):
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT * FROM events WHERE start_time >= ? AND start_time <= ?
-        '''
+    query = '''SELECT * FROM events WHERE start_time >= ? AND start_time <= ?'''
     data = (initial_start_time, final_start_time)
 
     cursor.execute(query, data)
@@ -322,17 +296,13 @@ def update_event_interests(event_title, interest_ids):
     connection = get_db()
     cursor = connection.cursor()
 
-    select_query = ''' 
-        SELECT id FROM events WHERE title = ?
-        '''
+    select_query = '''SELECT id FROM events WHERE title = ?'''
     event_title_data = (event_title,)
 
     cursor.execute(select_query, event_title_data)
     event_id = cursor.fetchone()[0]
 
-    insert_query = '''
-        INSERT OR IGNORE INTO event_interests (event_id, interest_id) VALUES (?, ?)
-        '''
+    insert_query = '''INSERT OR IGNORE INTO event_interests (event_id, interest_id) VALUES (?, ?)'''
     
     for interest_id in interest_ids:
         data = (event_id, interest_id)
@@ -352,9 +322,7 @@ def get_event_interests(event_title):
     connection = get_db()
     cursor = connection.cursor()
 
-    query_events = '''
-        SELECT id FROM events WHERE title = ?
-        '''
+    query_events = '''SELECT id FROM events WHERE title = ?'''
     event_title_data = (event_title,)
     cursor.execute(query_events, event_title_data)
     event_id = cursor.fetchone()[0]
@@ -381,10 +349,7 @@ def insert_events_into_db(events):
     cursor = connection.cursor()
     inserted_count = 0
 
-    query = '''
-        INSERT INTO events (title, org_name, description, start_time, end_time, location, frequency)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    '''
+    query = '''INSERT INTO events (title, org_name, description, start_time, end_time, location, frequency) VALUES (?, ?, ?, ?, ?, ?, ?)'''
     for event in events:
         data = (event["title"],
                 None,
@@ -409,9 +374,7 @@ def get_event_id_by_time(start_time):
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT id FROM events WHERE start_time = ?
-        '''
+    query = '''SELECT id FROM events WHERE start_time = ?'''
     data = (start_time,)
 
     cursor.execute(query, data)
@@ -430,17 +393,13 @@ def get_users_for_event(event_id):
     connection = get_db()
     cursor = connection.cursor()
 
-    query_events = '''
-            SELECT interest_id FROM event_interests WHERE event_id = ?
-            '''
+    query_events = '''SELECT interest_id FROM event_interests WHERE event_id = ?'''
     data = (event_id,)
     cursor.execute(query_events, data)
     interest_ids = [row[0] for row in cursor.fetchall()]
 
     user_ids = []
-    query_user_interests = '''
-        SELECT user_id FROM user_interests WHERE interest_id = ?
-        '''
+    query_user_interests = '''SELECT user_id FROM user_interests WHERE interest_id = ?'''
     for interest_id in interest_ids:
         data = (interest_id,)
         cursor.execute(query_user_interests, data)
@@ -458,12 +417,8 @@ def get_users_to_email(event_id):
     users = get_users_for_event(event_id)
     user_names = []
     user_emails = []
-    query_emails = '''
-        SELECT email FROM users WHERE id = ?
-        '''
-    query_names = '''
-        SELECT display_name FROM users WHERE id = ?
-        '''
+    query_emails = '''SELECT email FROM users WHERE id = ?'''
+    query_names = '''SELECT display_name FROM users WHERE id = ?'''
     
     connection = get_db()
     cursor = connection.cursor()
@@ -492,9 +447,7 @@ def add_user_events_emailed(event_id):
     connection = get_db()
     cursor = connection.cursor()
     event_id_str = str(event_id) + ","
-    query = '''
-        UPDATE users SET events_emailed = ? WHERE id = ?
-        '''
+    query = '''UPDATE users SET events_emailed = ? WHERE id = ?'''
     
 
     for user in users:
@@ -515,9 +468,7 @@ def if_user_emailed_for_event(user_id, event_id):
     connection = get_db()
     cursor = connection.cursor()
 
-    query = '''
-        SELECT events_emailed FROM users WHERE id = ?
-        '''
+    query = '''SELECT events_emailed FROM users WHERE id = ?'''
     data = (user_id,)
 
     cursor.execute(query, data)
