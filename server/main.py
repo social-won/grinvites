@@ -20,12 +20,12 @@ from api.interests import populate_interests
 
 
 async def my_daemon():
-    print("hi!!!")
+    # print("hi!!!")
 
     while True:
 
         # check for updates, send emails, etc.
-        print("hello!", datetime.now().isoformat())
+        # print("hello!", datetime.now().isoformat())
         await asyncio.sleep(60)
 
 

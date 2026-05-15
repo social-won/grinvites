@@ -6,11 +6,13 @@ import OnboardingFlow from './components/onboarding-flow.tsx'
 import HomeScreen from './components/home-screen.tsx'
 import ProtectedRoute from './components/protected-route.tsx'
 import LandingPage from './components/landing-page.tsx'
+import GetStartedPage from './components/get-started-page.tsx'
 
 const App: FC = () => {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/get-started" element={<GetStartedPage />} />
       <Route path="/login" element={<LoginForm />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/home" element={<ProtectedRoute><HomeScreen /></ProtectedRoute>} />

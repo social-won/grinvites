@@ -21,7 +21,7 @@ export default function LandingPage() {
                     Get invited to events at Grinnell that actually match your interests.
                 </p>
                 <Button size="lg" asChild>
-                    <Link to="/signup">Get started</Link>
+                    <Link to="/get-started">Get started</Link>
                 </Button>
             </main>
         </div>

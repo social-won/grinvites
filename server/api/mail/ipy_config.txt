@@ -1,0 +1,16 @@
+%load_ext autoreload
+%autoreload all
+import os
+os.chdir("server/api/mail/")
+from events import RequestEvent
+from iCal import ICSFile, ProdID
+from mail_exchange import MailAddress, MailServer
+from icalendar import Event, Calendar
+
+config = Config()
+
+def print_event(event):
+    print(event.to_ical().decode('utf-8'))
+
+recipient = MailAddress.individual_request("grant.sackmann@icloud.com", common_name="Grant Sackmann", language="English")
+sender = MailAddress("hello@grinvites.org")
