@@ -28,19 +28,18 @@ class Organization(BaseModel):
 
 class Event(BaseModel):
     id: int
+    event_id: str
     title: str
-    org_name: str | None = None
-    description: str | None = None
+    creation_time_stamp: str
     start_time: str                  # ISO datetime
     end_time: str | None = None
     location: str | None = None
+    summary: str | None = None
+    categories: str | None = None
+    tags: str | None = None
+    org_name: str | None = None
+    occurances: str | None = None
     frequency: str | None = None
-
-
-class Interests(BaseModel):
-    id: int
-    name: str
-    type: str
 
 
 class UserInterestsUpdate(BaseModel):

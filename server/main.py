@@ -17,16 +17,13 @@ from models import User, UserInterestsUpdate, UserUpdate
 from api.db_functions import *
 from api.scraper import scrape_events, test_scraping
 from api.interests import populate_interests
+from daemon import run_daemon
 
-
-async def my_daemon():
-    print("hi!!!")
-
+async def dummy_daemon(sleep: int = 10) -> None:
+    
     while True:
-
-        # check for updates, send emails, etc.
-        print("hello!", datetime.now().isoformat())
-        await asyncio.sleep(60)
+        print("hi ", datetime.now().fromisoformat())
+        await asyncio.sleep(sleep)
 
 
 @asynccontextmanager
@@ -38,17 +35,13 @@ async def lifespan(app: FastAPI):
         scrape_events()
         # test_scraping()
 
-    task = asyncio.create_task(my_daemon())
+    task = asyncio.create_task(dummy_daemon(1000))
     yield
     task.cancel()
 
-if os.getenv("RESET_USERS"):
-    print("Reseting users")
-    initialize_database()
-    populate_interests()
-    scrape_events()
-elif os.getenv("RESET_EVENTS"):
-    scrape_events()
+initialize_database()
+populate_interests()
+scrape_events()
 # test_scraping()
 # Written following https://fastapi.tiangolo.com/tutorial/
 app = FastAPI(lifespan=lifespan)
@@ -124,7 +117,7 @@ async def update_user(user_id: str, user_data: UserUpdate):
 @app.get("/users/{user_id}/interests")
 async def read_user_interests(user_id):
     interests = get_user_interests(user_id)
-    if not interests:
+    if interests is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     return interests
@@ -211,6 +204,10 @@ async def get_user_events(user_id: str):
 @app.get("/interests")
 async def read_interests():
     return get_interests()
+
+@app.get("/events")
+async def read_events():
+    return get_events()
 
 # Get event object
 

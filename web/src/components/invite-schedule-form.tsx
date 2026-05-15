@@ -61,7 +61,7 @@ export function InviteScheduleForm({ times, onTimesChange }: InviteScheduleFormP
                 className={cn(
                   'h-10 w-full rounded-md border text-sm font-medium transition-colors',
                   selected
-                    ? 'bg-primary text-primary-foreground border-primary'
+                    ? 'bg-chart-1/30 text-foreground border-primary'
                     : 'bg-background text-foreground border-input hover:bg-accent'
                 )}
               >
@@ -90,7 +90,7 @@ export function InviteScheduleForm({ times, onTimesChange }: InviteScheduleFormP
                       className={cn(
                         'flex flex-col items-center justify-center h-14 rounded-md border text-sm font-medium transition-colors',
                         selected
-                          ? 'bg-primary text-primary-foreground border-primary'
+                          ? 'bg-chart-1/30 text-foreground border-primary'
                           : 'bg-background text-foreground border-input hover:bg-accent'
                       )}
                     >

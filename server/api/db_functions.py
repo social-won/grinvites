@@ -1,11 +1,15 @@
+from models import Event, User
 import json
-import sqlite3, os, sys
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # go up one level
+import sqlite3
+import os
+import sys
+# go up one level
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from models import User
-#from scraper import scrape_events
+# from scraper import scrape_events
 
-#switch to id being input
+# switch to id being input
+
 
 def get_db() -> sqlite3.Connection:
     path = os.getenv("DB_PATH", "database.db")
@@ -14,14 +18,16 @@ def get_db() -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
-#Adds a user to the database
+# Adds a user to the database
+
+
 def add_user(user: User):
     connection = get_db()
     cursor = connection.cursor()
     query = '''
         INSERT INTO users (id, email, display_name, invite_times, theme) VALUES (?, ?, ?, ?, ?)
         '''
-    
+
     user_id = user.id
     email = user.email
     display_name = user.display_name
@@ -34,6 +40,7 @@ def add_user(user: User):
     connection.commit()
     connection.close()
 
+
 def get_users():
     connection = get_db()
     cursor = connection.cursor()
@@ -41,14 +48,16 @@ def get_users():
     query = '''
         SELECT * FROM users
         '''
-    
+
     cursor.execute(query)
 
     users = cursor.fetchall()
     connection.close()
     return users
 
-#Gets a user via their email
+# Gets a user via their email
+
+
 def get_user(user_id: str) -> User | None:
     connection = get_db()
     cursor = connection.cursor()
@@ -71,7 +80,9 @@ def get_user(user_id: str) -> User | None:
 
     return User(**user_dict)
 
-#Gets a user via their email
+# Gets a user via their email
+
+
 def get_user_by_email(user_email):
     connection = get_db()
     cursor = connection.cursor()
@@ -85,9 +96,17 @@ def get_user_by_email(user_email):
 
     user = cursor.fetchone()
     connection.close()
-    return user
+    if not user:
+        return None
 
-def get_event_by_id(event_id): 
+    column_names = [col[0] for col in cursor.description]
+    user_dict = dict(zip(column_names, user))
+    user_dict["invite_times"] = json.loads(user_dict["invite_times"] or "{}")
+
+    return User(**user_dict)
+
+
+def get_event_by_id(event_id):
     connection = get_db()
     cursor = connection.cursor()
 
@@ -99,10 +118,16 @@ def get_event_by_id(event_id):
     cursor.execute(query, data)
 
     event = cursor.fetchone()
+    column_names = [col[0] for col in cursor.description]
     connection.close()
-    return event
 
-#Updates a user's interests or adds them if non exist.
+    if not event:
+        return None
+    return dict(zip(column_names, event))
+
+# Updates a user's interests or adds them if non exist.
+
+
 def update_user_interests(email, interest_ids):
     connection = get_db()
     cursor = connection.cursor()
@@ -126,10 +151,17 @@ def update_user_interests(email, interest_ids):
     connection.commit()
     connection.close()
 
-#Gets a user's interests via their user_id
+# Gets a user's interests via their user_id
+
+
 def get_user_interests(user_id):
     connection = get_db()
     cursor = connection.cursor()
+
+    cursor.execute("SELECT 1 FROM users WHERE id = ?", (user_id,))
+    if cursor.fetchone() is None:
+        connection.close()
+        return None
 
     query = '''
         SELECT i.* FROM interests i
@@ -148,7 +180,9 @@ def get_user_interests(user_id):
     interests = [dict(zip(column_names, row)) for row in interests]
     return interests
 
-#Get all interests
+# Get all interests
+
+
 def get_interests():
     connection = get_db()
     cursor = connection.cursor()
@@ -156,33 +190,56 @@ def get_interests():
     query = '''
         SELECT * FROM interests
         '''
-    
+
     cursor.execute(query)
 
     interests = cursor.fetchall()
     if not interests:
         return
-    
+
     column_names = [col[0] for col in cursor.description]
     interests = [dict(zip(column_names, row)) for row in interests]
 
     connection.close()
     return interests
 
-def add_event(title, start_time, end_time, location, summary = None, categories = None, tags = None, org_name = None, frequency = None):
-    connection = get_db()
-    cursor = connection.cursor()
 
-    query = '''
-        INSERT INTO events (creation_time_stamp, title, start_time, end_time, location, summary, categories, tags, org_name, frequency)
-        VALUES (datetime('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        '''
-    data = (title, start_time, end_time, location, summary, categories, tags, org_name, frequency)
-    
-    cursor.execute(query, data)
+def add_event(event: Event, cursor=None):
+    own_connection = cursor is None
+    if own_connection:
+        connection = get_db()
+        cursor = connection.cursor()
 
-    connection.commit()
-    connection.close()
+    try:
+        query = '''
+            INSERT INTO events (
+                id, event_id, title, creation_time_stamp, start_time, end_time, location, summary, categories, tags, org_name
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            '''
+        data = (
+            event.id,
+            event.event_id,
+            event.title,
+            event.creation_time_stamp,
+            event.start_time,
+            event.end_time,
+            event.location,
+            event.summary,
+            event.categories,
+            event.tags,
+            event.org_name,
+        )
+
+        cursor.execute(query, data)
+    except Exception as e:
+        if own_connection: connection.rollback()
+        print(f"Error occurred adding event {event.id}: {e}")
+    finally:
+        if own_connection:
+            connection.commit()
+            connection.close()
+
 
 def get_events():
     connection = get_db()
@@ -198,7 +255,9 @@ def get_events():
     connection.close()
     return events
 
-#Gets an event via its title
+# Gets an event via its title
+
+
 def get_event_by_title(title):
     connection = get_db()
     cursor = connection.cursor()
@@ -213,6 +272,7 @@ def get_event_by_title(title):
     event = cursor.fetchone()
     connection.close()
     return event
+
 
 def get_event_by_time(initial_start_time, final_start_time):
     connection = get_db()
@@ -229,7 +289,9 @@ def get_event_by_time(initial_start_time, final_start_time):
     connection.close()
     return events
 
-#Updates an event's interests or adds them if non exist.
+# Updates an event's interests or adds them if non exist.
+
+
 def update_event_interests(event_title, interest_ids):
     connection = get_db()
     cursor = connection.cursor()
@@ -245,7 +307,7 @@ def update_event_interests(event_title, interest_ids):
     insert_query = '''
         INSERT OR IGNORE INTO event_interests (event_id, interest_id) VALUES (?, ?)
         '''
-    
+
     for interest_id in interest_ids:
         data = (event_id, interest_id)
         cursor.execute(insert_query, data)
@@ -253,7 +315,9 @@ def update_event_interests(event_title, interest_ids):
     connection.commit()
     connection.close()
 
-#Gets an event's interests via its title
+# Gets an event's interests via its title
+
+
 def get_event_interests(event_title):
     connection = get_db()
     cursor = connection.cursor()
@@ -277,7 +341,9 @@ def get_event_interests(event_title):
     connection.close()
     return event_interests
 
-#Inserts events from the scraper into the database
+# Inserts events from the scraper into the database
+
+
 def insert_events_into_db(events):
     connection = get_db()
     cursor = connection.cursor()
@@ -302,6 +368,7 @@ def insert_events_into_db(events):
     connection.close()
     print(f"Inserted {inserted_count} events into the database.")
 
+
 def get_event_id_by_time(start_time):
     connection = get_db()
     cursor = connection.cursor()
@@ -318,7 +385,9 @@ def get_event_id_by_time(start_time):
     connection.close()
     return event_ids
 
-#gets all user information for a given event
+# gets all user information for a given event
+
+
 def get_users_for_event(event_id):
     connection = get_db()
     cursor = connection.cursor()
@@ -342,7 +411,36 @@ def get_users_for_event(event_id):
     connection.close()
     return user_ids
 
-#returns the email and display name in json for all users of a given event
+
+def get_events_within_two_weeks():
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    two_weeks = now + timedelta(weeks=2)
+    connection = get_db()
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT * FROM events
+        WHERE start_time >= ? AND start_time <= ?
+    ''', (now.isoformat(), two_weeks.isoformat()))
+    rows = cursor.fetchall()
+    column_names = [col[0] for col in cursor.description]
+    connection.close()
+    return [dict(zip(column_names, row)) for row in rows]
+
+
+def get_users_for_event_full(event_id) -> list[User]:
+    """Returns full User objects for all users matched to an event via shared interests."""
+    user_ids = get_users_for_event(event_id)
+    users: list[User] = []
+    for uid in user_ids:
+        u = get_user(uid)
+        if u:
+            users.append(u)
+    return users
+
+# returns the email and display name in json for all users of a given event
+
+
 def get_users_to_email(event_id):
     users = get_users_for_event(event_id)
     user_names = []
@@ -353,7 +451,7 @@ def get_users_to_email(event_id):
     query_names = '''
         SELECT display_name FROM users WHERE id = ?
         '''
-    
+
     connection = get_db()
     cursor = connection.cursor()
 
@@ -367,9 +465,10 @@ def get_users_to_email(event_id):
         cursor.execute(query_names, data)
         user_name = cursor.fetchall()
         user_names.append(user_name)
-    
+
     connection.close()
     return {"emails": user_emails, "names": user_names}
+
 
 def add_user_events_emailed(event_id):
     users = get_users_for_event(event_id)
@@ -379,7 +478,6 @@ def add_user_events_emailed(event_id):
     query = '''
         UPDATE users SET events_emailed = ? WHERE id = ?
         '''
-    
 
     for user in users:
         data = (event_id_str, user)
@@ -388,7 +486,8 @@ def add_user_events_emailed(event_id):
     connection.commit()
     connection.close()
 
-def if_user_emailed_for_event(user_id, event_id):
+
+def if_user_emailed_for_event(user_id: str, event_id: int):
     users_emailed_events = []
 
     connection = get_db()
@@ -404,9 +503,9 @@ def if_user_emailed_for_event(user_id, event_id):
 
     if events_emailed:
         users_emailed_events = events_emailed.split(",")
-    
+
     for event in users_emailed_events:
         if event == str(event_id):
             return True
-        
+
     return False

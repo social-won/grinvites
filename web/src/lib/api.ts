@@ -61,11 +61,19 @@ export const getUser = async (uid: string, accessToken?: string): Promise<ApiRes
             });
             const data = response.ok ? await response.json() : null;
             return { status: response.status, data };
-        } catch {
+        } catch (error) {
+            console.error(`apiFetch /users/${uid}:`, error);
             return { status: 0, data: null };
         }
     }
     return apiFetch<GrinvitesUser>(`/users/${uid}`);
+};
+
+export const updateUserEmail = async (userId: string, email: string): Promise<ApiResponse<null>> => {
+    return apiFetch(`/users/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({ email }),
+    });
 };
 
 // ---------------------------------------------------------------------------
@@ -105,11 +113,11 @@ export const updateUserTheme = async (
 
 export const updateUserSchedule = async (
     userId: string,
-    inviteTimes: Record<string, string>,
+    invite_times: Record<string, string>,
 ): Promise<ApiResponse<null>> => {
     return apiFetch(`/users/${userId}`, {
         method: "PUT",
-        body: JSON.stringify({ invite_times: inviteTimes }),
+        body: JSON.stringify({ invite_times }),
     });
 };
 
@@ -138,6 +146,10 @@ export const updateUserInterests = async (userId: string, interestIds: number[])
 
 export const getUserEvents = async (userId: string): Promise<ApiResponse<ApiEvent[]>> => {
     return apiFetch<ApiEvent[]>(`/users/${userId}/events`);
+};
+
+export const getEvents = async (): Promise<ApiResponse<ApiEvent[]>> => {
+    return apiFetch<ApiEvent[]>("/events");
 };
 
 // ---------------------------------------------------------------------------

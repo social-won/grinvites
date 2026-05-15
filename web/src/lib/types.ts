@@ -38,11 +38,16 @@ export type Interest = {
 
 export type ApiEvent = {
     id: number;
+    event_id: string;
     title: string;
-    org_name: string | null;
-    description: string | null;
+    creation_time_stamp: string;
     start_time: string;
     end_time: string | null;
     location: string | null;
+    summary: string | null;
+    categories: string | null;
+    tags: string | null;
+    org_name: string | null;
+    occurances: string | null;
     frequency: string | null;
 };
