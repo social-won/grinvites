@@ -1,10 +1,10 @@
-.PHONY: app server daemon build test install
+.PHONY: app server daemon build test test-scraper install
 
 app:
 	cd web && npm run dev
 
 server:
-	cd server && uvicorn main:app --reload
+	cd server && ../.venv312/bin/python -m uvicorn main:app --reload
 
 daemon:
 	python server/api/daemon.py
@@ -21,3 +21,6 @@ install:
 test:
 	cd server && api/.venv/bin/python -m pytest
 	cd web && npm test
+
+test-scraper:
+	cd server && ../.venv312/bin/python -m pytest -vv -s api/test_scraper.py
