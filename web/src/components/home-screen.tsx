@@ -1,10 +1,12 @@
-import { FC } from 'react'
+import { FC, useState } from 'react'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
+
+const TAB_STORAGE_KEY = 'grinvites:active-tab'
 import { Button } from '@/components/ui/button'
 import ScheduleTab from './tabs/schedule-tab'
 import HoursTab from './tabs/hours-tab'
@@ -16,6 +18,14 @@ import supabase from '@/lib/supabase'
 const HomeScreen: FC = () => {
   const { user } = useUser();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>(
+    () => localStorage.getItem(TAB_STORAGE_KEY) ?? 'schedule'
+  );
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    localStorage.setItem(TAB_STORAGE_KEY, value);
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -26,7 +36,7 @@ const HomeScreen: FC = () => {
     <div className="min-h-screen bg-background">
 
       {/* Tabs */}
-      <Tabs defaultValue="schedule">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         {/* Top bar */}
         <div className="sticky top-0 z-10 bg-background border-b px-6 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center justify-between sm:flex-1">
@@ -47,7 +57,7 @@ const HomeScreen: FC = () => {
           </div>
         </div>
 
-        <div className="w-full max-w-xl mx-auto">
+        <div className="w-full max-w-3xl mx-auto">
           <TabsContent value="schedule">
             <ScheduleTab />
           </TabsContent>

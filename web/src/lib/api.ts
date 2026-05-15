@@ -148,6 +148,10 @@ export const getUserEvents = async (userId: string): Promise<ApiResponse<ApiEven
     return apiFetch<ApiEvent[]>(`/users/${userId}/events`);
 };
 
+export const getEvents = async (): Promise<ApiResponse<ApiEvent[]>> => {
+    return apiFetch<ApiEvent[]>("/events");
+};
+
 // ---------------------------------------------------------------------------
 // Hardcoded stubs (onboarding — replace once backend serves these)
 // ---------------------------------------------------------------------------

@@ -109,7 +109,7 @@ const PreferencesTab: FC = () => {
   const scheduleSummary = scheduleToSummary(inviteTimes)
 
   return (
-    <div className="p-6 space-y-6 w-full pb-24">
+    <div className="p-6 space-y-6 w-full pb-24 max-w-xl mx-auto">
 
       {/* Invite Schedule */}
       <section className="space-y-3">
